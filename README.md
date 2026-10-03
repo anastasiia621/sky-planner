@@ -39,4 +39,6 @@ A planner that checks your plans against the weather forecast.
 
 ---
 
+**Автор:** Настя ([@anastasiia621](https://github.com/anastasiia621))
+
 Сделано в процессе обучения вайб-кодингу вместе с Claude. 💛
