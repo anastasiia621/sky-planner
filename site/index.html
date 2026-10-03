@@ -1,0 +1,1857 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sky Planner</title>
+<meta name="description" content="Ежедневник, который сверяет твои планы и дорогу с прогнозом погоды: подскажет, когда ехать на пляж, на чём добраться и что взять с собой.">
+<meta property="og:title" content="Sky Planner">
+<meta property="og:description" content="Планы, которые сверяются с погодой. Советы по дороге, переносу и местам Фетхие.">
+<meta name="theme-color" content="#0a8582">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2214%22%20fill%3D%22%230a8582%22%2F%3E%3Ccircle%20cx%3D%2224%22%20cy%3D%2226%22%20r%3D%229%22%20fill%3D%22%23ffd166%22%2F%3E%3Cpath%20d%3D%22M20%2046h26a9%209%200%200%200%200-18%2012%2012%200%200%200-23%203%207.5%207.5%200%200%200-3%2015z%22%20fill%3D%22%23fff%22%2F%3E%3C%2Fsvg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;600&family=Onest:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: header + place, a scrollable week strip, ideas, then plans (wide) beside hourly weather, the add form and saved places (narrow). */
+:root {
+  --bg: #edf2f0;
+  --surface: #ffffff;
+  --ink: #0f2a2c;
+  --muted: #5b706f;
+  --line: #d3dedb;
+  --accent: #0a8582;
+  --accent-soft: #dcefed;
+  --accent-ink: #ffffff;
+  --warn: #9a5800;
+  --warn-bg: #fff1d9;
+  --danger: #b8322a;
+  --danger-bg: #fde6e3;
+  --ok: #2a7548;
+  --ok-bg: #e2f2e8;
+  --note: #3f55a8;
+  --note-bg: #e8ecfb;
+  --rain: #2468d6;
+  --rain-bg: #e3edfd;
+  --wind: #4f7d86;
+  --hot: #e0531f;
+  --warm: #d18a00;
+  --cool: #2f8fc9;
+  --uv: #b88a00;
+  --storm: #7a4fd0;
+  --sky-bg: #e6f0fa;
+  --sky-line: #c6daf0;
+  --sky-ink: #1f5a96;
+  --idea-bg: #fbf0e2;
+  --idea-line: #eed5b4;
+  --idea-ink: #8f4c15;
+  --shadow: rgba(15, 42, 44, 0.07);
+  --font-display: "Unbounded", "Trebuchet MS", sans-serif;
+  --font-body: "Onest", "Segoe UI", system-ui, sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b1819; --surface: #122426; --ink: #e2eeec; --muted: #8ea5a3; --line: #23393b;
+    --accent: #3cc2be; --accent-soft: #143a3a; --accent-ink: #032120;
+    --warn: #f0a640; --warn-bg: #33240c; --danger: #ff7c70; --danger-bg: #3a1714;
+    --ok: #6fd39a; --ok-bg: #11301f; --note: #a3b3f7; --note-bg: #1c2340;
+    --rain: #7fb2ff; --rain-bg: #142a4a; --wind: #9cc7cf; --hot: #ff8a5c; --warm: #f2b84b; --cool: #7cc6f2; --uv: #f2cf4b; --storm: #b99cff;
+    --sky-bg: #0f2236; --sky-line: #1f3b5a; --sky-ink: #8cc0f5; --idea-bg: #2a1f14; --idea-line: #4a3520; --idea-ink: #f0b77a; --shadow: rgba(0, 0, 0, 0.3);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0b1819; --surface: #122426; --ink: #e2eeec; --muted: #8ea5a3; --line: #23393b;
+  --accent: #3cc2be; --accent-soft: #143a3a; --accent-ink: #032120;
+  --warn: #f0a640; --warn-bg: #33240c; --danger: #ff7c70; --danger-bg: #3a1714;
+  --ok: #6fd39a; --ok-bg: #11301f; --note: #a3b3f7; --note-bg: #1c2340;
+  --rain: #7fb2ff; --rain-bg: #142a4a; --wind: #9cc7cf; --hot: #ff8a5c; --warm: #f2b84b; --cool: #7cc6f2; --uv: #f2cf4b; --storm: #b99cff;
+    --sky-bg: #0f2236; --sky-line: #1f3b5a; --sky-ink: #8cc0f5; --idea-bg: #2a1f14; --idea-line: #4a3520; --idea-ink: #f0b77a; --shadow: rgba(0, 0, 0, 0.3);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 15px/1.5 var(--font-body);
+  padding-inline: 16px;
+  padding-block: 20px 48px;
+}
+.wrap { max-width: 1120px; margin-inline: auto; display: grid; gap: 22px; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+header { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px; }
+.brand h1 { font: 600 clamp(24px, 4vw, 34px)/1.1 var(--font-display); margin: 0; letter-spacing: -0.01em; }
+.brand p { margin: 4px 0 0; color: var(--muted); }
+.place-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px;
+}
+.place-btn small { color: var(--accent); font-weight: 600; }
+
+.settings { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 10px; }
+.inline-form { display: flex; flex-wrap: wrap; gap: 8px; }
+.inline-form input { flex: 1 1 200px; min-width: 0; }
+.results { display: grid; gap: 6px; }
+.results button { text-align: left; background: var(--accent-soft); border: 0; border-radius: 8px; padding: 7px 10px; overflow-wrap: anywhere; }
+.results p { margin: 0; color: var(--muted); font-size: 14px; }
+
+input[type="text"], input[type="date"], input[type="time"] {
+  background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; min-width: 0; width: 100%;
+}
+.inline-form input[type="text"] { width: auto; }
+.btn { background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 8px; padding: 9px 16px; font-weight: 600; }
+.btn-ghost { background: transparent; border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; font-size: 14px; }
+.link-btn { background: none; border: 0; padding: 0; color: var(--accent); font-weight: 600; font-size: 13px; }
+
+.status { color: var(--muted); }
+.status.error { color: var(--danger); }
+
+/* Weather icons and metric pills */
+.ic { width: 14px; height: 14px; flex: none; }
+.m { display: inline-flex; align-items: center; gap: 3px; font-family: var(--font-data); font-variant-numeric: tabular-nums; font-size: 13px; white-space: nowrap; }
+.m-rain { color: var(--rain); }
+.m-wind { color: var(--wind); }
+.m-uv { color: var(--uv); }
+.m-storm { color: var(--storm); }
+.t-hot { color: var(--hot); }
+.t-warm { color: var(--warm); }
+.t-cool { color: var(--cool); }
+
+.week-scroll { overflow-x: auto; padding-bottom: 4px; }
+.week { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(124px, 1fr); gap: 8px; }
+.day {
+  position: relative; text-align: left; display: grid; gap: 3px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px;
+}
+.day[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.day .wd { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.day .glyph { font-size: 22px; line-height: 1.3; }
+.day .flag {
+  position: absolute; top: 9px; right: 10px; min-width: 20px; height: 20px; padding: 0 6px;
+  border-radius: 999px; font: 500 12px/20px var(--font-data); text-align: center;
+  background: var(--warn-bg); color: var(--warn);
+}
+.day .flag.danger { background: var(--danger-bg); color: var(--danger); }
+
+.ideas-wrap { background: var(--idea-bg); border: 1px solid var(--idea-line); border-radius: 14px; }
+.ideas-wrap summary {
+  list-style: none; cursor: pointer; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px;
+  align-items: center; padding: 12px 16px; border-radius: 14px;
+}
+.ideas-wrap summary::-webkit-details-marker { display: none; }
+.ideas-wrap summary:hover .sum-toggle { text-decoration: underline; }
+.sum-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; min-width: 0; }
+.sum-title { font: 600 13px/1.3 var(--font-body); text-transform: uppercase; letter-spacing: 0.07em; color: var(--idea-ink); }
+.sum-title::before { content: "✦ "; }
+.idea-chip { background: var(--surface); color: var(--idea-ink); }
+.sum-preview { grid-column: 1; color: var(--muted); font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.sum-toggle { grid-row: 1 / 3; grid-column: 2; color: var(--idea-ink); font-weight: 600; font-size: 14px; }
+.sum-toggle::after { content: "Показать ▾"; }
+.ideas-wrap[open] .sum-toggle::after { content: "Свернуть ▴"; }
+.ideas-wrap[open] .sum-preview { display: none; }
+.ideas-wrap .ideas { padding: 0 16px 16px; }
+.ideas { display: grid; gap: 16px; }
+.idea-group { display: grid; gap: 8px; }
+.idea-group h4 { margin: 0; font: 600 13px/1.3 var(--font-body); color: var(--idea-ink); }
+.idea-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+.idea {
+  display: grid; gap: 6px; align-content: start; min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--idea-line); border-radius: 14px; padding: 14px 16px;
+}
+.idea .when { font: 500 12px/1.3 var(--font-data); text-transform: uppercase; letter-spacing: 0.05em; color: var(--idea-ink); }
+.idea .what { font: 500 16px/1.3 var(--font-display); }
+.idea p { margin: 0; color: var(--muted); font-size: 14px; }
+.idea .metrics { display: flex; flex-wrap: wrap; gap: 10px; }
+.idea-links { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 14px; }
+.idea-links a { color: var(--idea-ink); font-weight: 600; }
+.btn-idea { justify-self: start; margin-top: 4px; background: transparent; border: 1px solid var(--idea-ink); color: var(--idea-ink); border-radius: 8px; padding: 7px 12px; font-weight: 600; }
+.btn-idea:hover { background: var(--idea-bg); }
+.btn-idea.ghost { border-color: transparent; padding-inline: 6px; }
+.idea-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.idea-actions .btn-idea { margin-top: 0; }
+.idea-img { margin: -14px -16px 4px; position: relative; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 13px 13px 0 0; background: var(--idea-bg); max-width: none; }
+.idea-img img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; max-width: none; opacity: 0; transition: opacity 0.4s; }
+.idea-img.has-photo img { opacity: 1; }
+.idea-img { display: grid; place-items: center; background: linear-gradient(135deg, var(--idea-bg), var(--sky-bg)); }
+.idea-img.cover-food { background: linear-gradient(135deg, var(--idea-bg), var(--idea-line)); }
+.idea-img.cover-trip { background: linear-gradient(135deg, var(--sky-bg), var(--sky-line)); }
+.cover-icon { font-size: 44px; line-height: 1; filter: drop-shadow(0 4px 10px var(--shadow)); }
+@media (prefers-reduced-motion: reduce) { .idea-img img { transition: none; } }
+.idea-img figcaption { position: absolute; right: 6px; bottom: 6px; font-size: 10px; color: #fff; background: rgba(0, 0, 0, 0.45); padding: 1px 6px; border-radius: 4px; }
+.crowd { color: var(--idea-ink) !important; font-size: 13px !important; }
+.form-check { border-radius: 10px; padding: 10px 12px; font-size: 14px; display: grid; gap: 6px; background: var(--ok-bg); color: var(--ink); }
+.form-check b { font-weight: 600; }
+.form-check.ok b { color: var(--ok); }
+.form-check.warn { background: var(--warn-bg); }
+.form-check.warn b { color: var(--warn); }
+.form-check.danger { background: var(--danger-bg); }
+.form-check.danger b { color: var(--danger); }
+.form-check.muted { background: var(--bg); color: var(--muted); }
+.fc-alt { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+.fc-alt .btn-ghost { background: var(--surface); }
+.trip-from { margin: 0; font-size: 14px; color: var(--muted); }
+.trip-from b { color: var(--ink); font-weight: 600; }
+
+.main { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 860px) { .main { grid-template-columns: minmax(0, 1fr); } }
+.col { display: grid; gap: 14px; min-width: 0; }
+h2 { font: 500 20px/1.25 var(--font-display); margin: 0; text-wrap: balance; }
+h3 { font: 600 13px/1.3 var(--font-body); text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); margin: 0; }
+.day-summary { color: var(--muted); margin: 4px 0 0; display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; }
+
+.plans { display: grid; gap: 10px; }
+.plan { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px 14px; }
+.plan .time { font: 500 16px/1.3 var(--font-data); font-variant-numeric: tabular-nums; display: grid; }
+.plan .time span:last-child { color: var(--muted); font-size: 13px; }
+.plan .title { font-weight: 600; overflow-wrap: anywhere; }
+.plan .meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 4px; }
+.plan .del { background: none; border: 0; color: var(--muted); font-size: 18px; line-height: 1; padding: 2px 4px; align-self: start; }
+.plan .body { grid-column: 1 / -1; display: grid; gap: 8px; margin-top: 4px; }
+.tag { font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; }
+.chip { font-size: 12px; font-weight: 600; border-radius: 999px; padding: 2px 9px; }
+.chip.ok { background: var(--ok-bg); color: var(--ok); }
+.chip.warn { background: var(--warn-bg); color: var(--warn); }
+.chip.danger { background: var(--danger-bg); color: var(--danger); }
+.chip.note { background: var(--note-bg); color: var(--note); }
+.chip.muted { background: var(--bg); color: var(--muted); }
+.issues { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 14px; }
+.issues li { display: flex; align-items: center; gap: 7px; }
+.issues .ic { width: 16px; height: 16px; }
+.trip { display: grid; gap: 6px; }
+.leg { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 2px 10px; align-items: start; font-size: 14px; }
+.leg .lbl { color: var(--muted); font-family: var(--font-data); font-size: 12px; padding-top: 2px; }
+.leg .txt { overflow-wrap: anywhere; }
+.leg .txt.warn { color: var(--warn); font-weight: 500; }
+.leg .metrics { grid-column: 2; display: flex; flex-wrap: wrap; gap: 10px; }
+.verdict { margin: 0; font-weight: 600; color: var(--warn); }
+.verdict.danger { color: var(--danger); }
+.trip2 { display: grid; gap: 12px; }
+.leg2 { display: grid; gap: 8px; }
+.leg-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 6px 12px; }
+.leg-head .lbl { font: 500 13px/1.3 var(--font-data); color: var(--muted); }
+.leg-head .metrics { display: flex; flex-wrap: wrap; gap: 10px; }
+.modes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 560px) { .modes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.mode { display: grid; gap: 2px; align-content: start; border: 1px solid var(--line); border-radius: 12px; padding: 10px; min-width: 0; }
+.mode .mi { width: 28px; height: 28px; color: var(--ink); }
+.mode .mi svg { width: 100%; height: 100%; }
+.mode .mn { font-weight: 600; font-size: 14px; }
+.mode .star { color: var(--accent); }
+.mode .mt { font: 500 15px/1.3 var(--font-data); font-variant-numeric: tabular-nums; }
+.mode .leave { font: 400 12px/1.3 var(--font-data); color: var(--muted); }
+.mode .ms { font-size: 12.5px; line-height: 1.35; margin-top: 2px; overflow-wrap: anywhere; }
+.mode.ok .ms { color: var(--ok); }
+.mode.warn .ms { color: var(--warn); font-weight: 600; }
+.mode.note .ms { color: var(--note); }
+.mode.far { opacity: 0.55; }
+.mode.far .ms { color: var(--muted); }
+.mode.warn .mi { color: var(--warn); }
+.mode.best { border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.route { color: var(--accent); font-weight: 600; font-size: 14px; justify-self: start; }
+.places .pa a { color: var(--accent); }
+.suggest { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; background: var(--accent-soft); border-radius: 10px; padding: 10px 12px; }
+.suggest p { margin: 0; min-width: 0; flex: 1 1 220px; }
+.suggest small { display: block; color: var(--muted); }
+.hint { font-size: 13px; color: var(--muted); margin: 0; }
+.empty { background: var(--surface); border: 1px dashed var(--line); border-radius: 14px; padding: 18px; color: var(--muted); }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 12px; min-width: 0; }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 4px; }
+.hours-scroll { overflow-x: auto; }
+.hours { display: grid; grid-auto-flow: column; grid-auto-columns: 60px; gap: 4px; }
+.hour { display: grid; justify-items: center; gap: 3px; padding: 7px 0; border-radius: 10px; font-size: 12px; }
+.hour.wet { background: var(--rain-bg); }
+.hour .h { font-family: var(--font-data); color: var(--muted); }
+.hour .g { font-size: 18px; }
+.hour .m { font-size: 12px; }
+.hour .m.t { font-size: 14px; font-weight: 500; }
+
+.add { display: grid; gap: 12px; }
+.add .row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 420px) { .add .row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .add .row label:first-child { grid-column: 1 / -1; } }
+.add label, .field-label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+.where-q { font-weight: 600; color: var(--ink); font-size: 14px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.choice { background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; font-size: 14px; }
+.choice[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.subpanel { display: grid; gap: 8px; background: var(--bg); border-radius: 10px; padding: 10px; }
+.subpanel .results button { background: var(--surface); }
+.picked { font-size: 14px; color: var(--ok); overflow-wrap: anywhere; }
+.check { display: flex !important; align-items: center; gap: 8px; color: var(--ink) !important; font-size: 14px !important; }
+.error-text { color: var(--danger); font-size: 13px; margin: 0; }
+
+.places { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.places li { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 2px 10px; align-items: center; }
+.places .pi { font-size: 20px; text-align: center; }
+.places .pn { font-weight: 600; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.places .pa { grid-column: 2; font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.places .del { background: none; border: 0; color: var(--muted); font-size: 18px; }
+
+.other { gap: 8px; }
+.other-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.other-list li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+.other-list .od { font: 500 13px/1.3 var(--font-data); color: var(--muted); }
+.other-list .ot { overflow-wrap: anywhere; }
+.plan-actions { display: flex; gap: 2px; align-self: start; }
+.icon-btn { background: none; border: 0; color: var(--muted); font-size: 17px; line-height: 1; padding: 4px 6px; border-radius: 6px; }
+.icon-btn:hover { background: var(--bg); color: var(--ink); }
+.plan.editing { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.add.editing { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.form-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.toast {
+  position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+  width: min(460px, calc(100% - 32px)); z-index: 50;
+  background: var(--ink); color: var(--bg); border-radius: 14px; padding: 14px 16px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px;
+  animation: toast-in 0.25s ease-out;
+}
+.toast .tt { font-weight: 600; }
+.toast .tx { grid-column: 1; font-size: 14px; opacity: 0.85; overflow-wrap: anywhere; }
+.toast ul { grid-column: 1 / -1; margin: 6px 0 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 14px; }
+.toast li::before { content: "💡 "; }
+.toast .tclose { grid-row: 1; grid-column: 2; background: none; border: 0; color: inherit; opacity: 0.7; font-size: 18px; line-height: 1; padding: 0 2px; }
+.toast .tact { grid-column: 1 / -1; justify-self: start; background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 8px; padding: 6px 12px; font-weight: 600; margin-top: 6px; }
+@keyframes toast-in { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@media (prefers-reduced-motion: reduce) { .toast { animation: none; } }
+footer { color: var(--muted); font-size: 13px; }
+
+/* Three zones, one style: weather = sky, ideas = sand, plans = white cards with the teal accent. */
+.zone-label { display: inline-flex; align-items: center; gap: 7px; font: 600 12px/1.3 var(--font-body); text-transform: uppercase; letter-spacing: 0.08em; }
+.zone-label::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.weather-label { color: var(--sky-ink); }
+.plans-label { color: var(--accent); margin-bottom: 4px; }
+.weather-zone { display: grid; gap: 8px; }
+.day { background: var(--sky-bg); border-color: var(--sky-line); }
+.day[aria-pressed="true"] { background: var(--surface); border-color: var(--sky-ink); box-shadow: inset 0 0 0 1px var(--sky-ink); }
+.weather-card { background: var(--sky-bg); border-color: var(--sky-line); }
+.weather-card h3 { color: var(--sky-ink); }
+.weather-card .hour.wet { background: var(--surface); }
+.plan { box-shadow: 0 1px 2px var(--shadow), 0 6px 18px var(--shadow); }
+.plan .time > span:first-child { color: var(--accent); }
+.examples-note { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; background: var(--note-bg); color: var(--note); border-radius: 12px; padding: 10px 14px; font-size: 14px; }
+.examples-note span { flex: 1 1 260px; min-width: 0; }
+.examples-note .btn-ghost { border-color: var(--note); color: var(--note); }
+footer a { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <h1>Sky Planner</h1>
+      <p>Ежедневник, который сверяет твои планы и дорогу с прогнозом погоды</p>
+    </div>
+    <button class="place-btn" id="place-btn" type="button" aria-expanded="false">
+      <span id="place-label">Фетхие, Турция</span> <small>сменить город</small>
+    </button>
+  </header>
+
+  <section class="settings" id="settings" hidden>
+    <h3>Город для прогноза</h3>
+    <form class="inline-form" id="city-form">
+      <input type="text" id="city" placeholder="Например: Фетхие, Анталья, Казань" autocomplete="off">
+      <button class="btn" type="submit">Найти</button>
+    </form>
+    <div class="results" id="city-results"></div>
+  </section>
+
+  <p class="status" id="status">Загружаю прогноз…</p>
+
+  <section class="weather-zone">
+    <span class="zone-label weather-label">Погода на 7 дней</span>
+    <div class="week-scroll"><div class="week" id="week"></div></div>
+  </section>
+
+  <details class="ideas-wrap" id="ideas-wrap" hidden>
+    <summary>
+      <span class="sum-head"><span class="sum-title" id="ideas-title">Идеи на ближайшие дни</span><span class="chip idea-chip" id="ideas-count"></span></span>
+      <span class="sum-preview" id="ideas-preview"></span>
+      <span class="sum-toggle" aria-hidden="true"></span>
+    </summary>
+    <div class="ideas" id="ideas"></div>
+  </details>
+
+  <div class="main">
+    <section class="col">
+      <div>
+        <span class="zone-label plans-label">Мои планы</span>
+        <h2 id="day-title">Сегодня</h2>
+        <div class="day-summary" id="day-summary"></div>
+      </div>
+      <div class="plans" id="plans"></div>
+    </section>
+
+    <aside class="col">
+      <div class="card weather-card">
+        <h3>Погода по часам</h3>
+        <div class="legend">
+          <span class="m-rain" id="lg-rain"></span>
+          <span class="m-wind" id="lg-wind"></span>
+          <span class="t-warm" id="lg-temp"></span>
+        </div>
+        <div class="hours-scroll"><div class="hours" id="hours"></div></div>
+      </div>
+
+      <form class="card add" id="add-form" novalidate>
+        <h3 id="form-title">Новый план</h3>
+        <label>Что планируешь?
+          <input type="text" id="plan-title" placeholder="Например: работа, тренировка, прогулка" autocomplete="off">
+        </label>
+        <div class="row">
+          <label>День <input type="date" id="plan-date"></label>
+          <label>С <input type="time" id="plan-start" value="09:00"></label>
+          <label>До <input type="time" id="plan-end" value="12:00"></label>
+        </div>
+        <div class="form-check" id="form-check" role="status" aria-live="polite" hidden></div>
+        <div class="field-label">
+          <span class="where-q" id="where-q">Где это будет?</span>
+          <div class="chips" id="where-chips"></div>
+        </div>
+        <div class="subpanel" id="new-addr" hidden>
+          <div class="inline-form">
+            <input type="text" id="addr-q" placeholder="Начни вводить адрес или вставь ссылку из Google Карт" autocomplete="off">
+            <button class="btn-ghost" type="button" id="addr-find">Найти</button>
+          </div>
+          <div class="results" id="addr-results"></div>
+          <div class="picked" id="addr-picked" hidden></div>
+          <label class="check"><input type="checkbox" id="addr-save"> Сохранить как ярлык</label>
+          <div class="inline-form" id="addr-save-row" hidden>
+            <input type="text" id="addr-label" placeholder="Название, например «Офис»" autocomplete="off">
+            <div class="chips" id="addr-icons"></div>
+          </div>
+        </div>
+        <p class="error-text" id="form-err" hidden></p>
+        <div class="form-actions">
+          <button class="btn" type="submit" id="form-submit">Добавить план</button>
+          <button class="btn-ghost" type="button" id="form-cancel" hidden>Отмена</button>
+        </div>
+        <p class="hint">Погоду проверяю для велосипеда, бега, прогулок и походов, пляжа, лодки, параплана и пикников. Для работы, учёбы и тренировок подскажу, как лучше добраться.</p>
+      </form>
+
+      <div class="card">
+        <h3>Мои места</h3>
+        <ul class="places" id="places"></ul>
+        <button class="btn-ghost" type="button" id="place-add-open">＋ Добавить место</button>
+        <form class="subpanel" id="place-form" hidden>
+          <span class="where-q" id="place-form-title">Новое место</span>
+          <div id="place-meta" class="inline-form">
+            <input type="text" id="pf-name" placeholder="Название: Офис, Зал, Универ" autocomplete="off">
+            <div class="chips" id="pf-icons"></div>
+          </div>
+          <div class="inline-form">
+            <input type="text" id="pf-q" placeholder="Начни вводить адрес или вставь ссылку из Google Карт" autocomplete="off">
+            <button class="btn-ghost" type="button" id="pf-find">Найти</button>
+          </div>
+          <div class="results" id="pf-results"></div>
+          <button class="link-btn" type="button" id="pf-cancel">Отмена</button>
+        </form>
+      </div>
+    </aside>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <footer>Прогноз: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>. Поиск адресов: <a href="https://photon.komoot.io/" target="_blank" rel="noopener">Photon</a> и <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>. Планы и места хранятся только в этом браузере.</footer>
+</div>
+
+<script>
+const LS_PLANS = 'sky.plans.v2';
+const LS_PLACES = 'sky.places.v1';
+const LS_CITY = 'sky.place.v1';
+const DEFAULT_CITY = { name: 'Фетхие', country: 'Турция', lat: 36.6214, lon: 29.1164 };
+
+function load(key, fallback) {
+  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch (e) { return fallback; }
+}
+function save(key, value) {
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {}
+}
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const pad = (n) => String(n).padStart(2, '0');
+const hourKey = (date, h) => `${date}T${pad(h)}:00`;
+const toMin = (t) => { const [h, m] = t.split(':').map(Number); return h * 60 + (m || 0); };
+const fromMin = (m) => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+// ---------- Icons ----------
+const ICON = {
+  rain: '<svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1.2C8 1.2 3.3 6.8 3.3 10a4.7 4.7 0 0 0 9.4 0C12.7 6.8 8 1.2 8 1.2z"/></svg>',
+  wind: '<svg class="ic" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M1.5 6h8.8a2.1 2.1 0 1 0-2.1-2.1"/><path d="M1.5 9.4h11a2.1 2.1 0 1 1-2.1 2.1"/><path d="M1.5 12.8h4.5"/></svg>',
+  temp: '<svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.4" d="M6.4 2.6a1.6 1.6 0 0 1 3.2 0v6.1a3.1 3.1 0 1 1-3.2 0z"/><circle fill="currentColor" cx="8" cy="11.3" r="1.7"/><path stroke="currentColor" stroke-width="1.6" stroke-linecap="round" d="M8 5.6v5"/></svg>',
+  uv: '<svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><circle fill="currentColor" cx="8" cy="8" r="3"/><g stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M8 1v1.8M8 13.2V15M1 8h1.8M13.2 8H15M3 3l1.3 1.3M11.7 11.7 13 13M3 13l1.3-1.3M11.7 4.3 13 3"/></g></svg>',
+  storm: '<svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M9.6 1 3.5 9h3.6L6 15l6.5-8.4H8.8z"/></svg>',
+};
+const tClass = (t) => (t >= 28 ? 't-hot' : t >= 18 ? 't-warm' : 't-cool');
+const mRain = (p) => `<span class="m m-rain" title="Вероятность дождя">${ICON.rain}${p}%</span>`;
+const mWind = (w) => `<span class="m m-wind" title="Ветер">${ICON.wind}${Math.round(w)} км/ч</span>`;
+const mTemp = (t, extra = '') => `<span class="m ${tClass(t)} ${extra}" title="Температура">${ICON.temp}${Math.round(t)}°</span>`;
+const issueIcon = (kind) => ({
+  rain: `<span class="m-rain">${ICON.rain}</span>`, wind: `<span class="m-wind">${ICON.wind}</span>`,
+  hot: `<span class="t-hot">${ICON.temp}</span>`, cold: `<span class="t-cool">${ICON.temp}</span>`,
+  uv: `<span class="m-uv">${ICON.uv}</span>`, storm: `<span class="m-storm">${ICON.storm}</span>`,
+}[kind]);
+
+// ---------- State ----------
+let city = load(LS_CITY, DEFAULT_CITY);
+let plans = load(LS_PLANS, null);
+let places = load(LS_PLACES, null);
+let wx = null;
+let selected = null;
+let nowDate = null, nowHour = 0;
+
+const PLACE_ICONS = ['🏢', '🏋️', '🎓', '☕', '🛒', '👶', '📍'];
+const WORK_RE = /работ|офис|\bwork|учёб|учеб|пары|лекци|встреч|созвон|смена|study|office/i;
+
+// What each outdoor activity is sensitive to. Order matters: "велопрогулка" should match the bike before the walk.
+const CATS = [
+  { id: 'balloon', label: 'Воздушный шар', re: /воздушн\S* шар|balloon/i, lim: { pop: 20, wind: 12, gust: 20 } },
+  { id: 'atv', label: 'Квадроциклы', re: /квадро|\batv\b|багги|buggy/i, lim: { pop: 40, wind: 35, hot: 35 } },
+  { id: 'horse', label: 'Верховая прогулка', re: /конн|лошад|верхов|horse/i, lim: { pop: 50, wind: 35, hot: 33 } },
+  { id: 'paraglide', label: 'Параплан', re: /параплан|paraglid|бабада/i, lim: { pop: 30, wind: 20, gust: 30 } },
+  { id: 'boat', label: 'Лодка', re: /лодк|яхт|катер|boat|остров|круиз/i, lim: { pop: 50, wind: 25, gust: 40 } },
+  { id: 'bike', label: 'Велосипед', re: /вело|bike|cycl|самокат/i, lim: { pop: 50, wind: 30, gust: 45, hot: 32, cold: 5 } },
+  { id: 'run', label: 'Пробежка', re: /бег|пробеж|\brun|jog/i, lim: { pop: 50, wind: 40, hot: 30 } },
+  { id: 'beach', label: 'Пляж и море', re: /пляж|beach|купа|плава|swim|море|\bsea|сноркл|дайв|олюдениз|ölüdeniz/i, lim: { pop: 40, wind: 30, cool: 22, uv: 8 } },
+  { id: 'walk', label: 'Прогулка', re: /прогул|погулят|walk|поход|hike|тропа|ликийск|каньон|саклыкент|экскурс|набережн/i, lim: { pop: 50, wind: 40, hot: 34 } },
+  { id: 'outdoor', label: 'На улице', re: /пикник|picnic|террас|барбекю|шашлык|на улице|рынок|market|фотосесс/i, lim: { pop: 50, wind: 35 } },
+];
+const COMMUTE = { pop: 50, wind: 30, gust: 45, hot: 33, cold: 3 };
+const RANK = { ok: 0, note: 1, warn: 2, danger: 3 };
+
+function wmo(code) {
+  if (code === 0) return { g: '☀️', label: 'Ясно' };
+  if (code === 1) return { g: '🌤️', label: 'Почти ясно' };
+  if (code === 2) return { g: '⛅', label: 'Переменная облачность' };
+  if (code === 3) return { g: '☁️', label: 'Пасмурно' };
+  if (code === 45 || code === 48) return { g: '☁️', label: 'Туман' };
+  if (code >= 51 && code <= 57) return { g: '🌦️', label: 'Морось' };
+  if (code >= 61 && code <= 67) return { g: '🌧️', label: 'Дождь' };
+  if ((code >= 71 && code <= 77) || code === 85 || code === 86) return { g: '❄️', label: 'Снег' };
+  if (code >= 80 && code <= 82) return { g: '🌧️', label: 'Ливень' };
+  if (code >= 95) return { g: '⛈️', label: 'Гроза' };
+  return { g: '·', label: '' };
+}
+function fmtDay(date, opts = { weekday: 'short', day: 'numeric', month: 'short' }) {
+  return new Date(date + 'T12:00').toLocaleDateString('ru-RU', opts);
+}
+
+// ---------- Weather ----------
+const HOURLY = 'temperature_2m,precipitation_probability,precipitation,weather_code,wind_speed_10m,wind_gusts_10m,uv_index';
+function parseHourly(d) {
+  const H = {};
+  d.hourly.time.forEach((t, i) => {
+    H[t] = {
+      temp: d.hourly.temperature_2m[i], pop: d.hourly.precipitation_probability[i] ?? 0,
+      prcp: d.hourly.precipitation[i] ?? 0, code: d.hourly.weather_code[i],
+      wind: d.hourly.wind_speed_10m[i], gust: d.hourly.wind_gusts_10m[i], uv: d.hourly.uv_index[i] ?? 0,
+    };
+  });
+  return H;
+}
+async function loadWeather() {
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}`
+    + `&current=temperature_2m&hourly=${HOURLY}`
+    + '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max'
+    + '&timezone=auto&forecast_days=7';
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('weather ' + res.status);
+  const d = await res.json();
+  wx = {
+    H: parseHourly(d),
+    days: d.daily.time.map((t, i) => ({
+      date: t, code: d.daily.weather_code[i], max: d.daily.temperature_2m_max[i], min: d.daily.temperature_2m_min[i],
+      pop: d.daily.precipitation_probability_max[i] ?? 0, wind: d.daily.wind_speed_10m_max[i],
+    })),
+  };
+  nowDate = d.current.time.slice(0, 10);
+  nowHour = parseInt(d.current.time.slice(11, 13), 10);
+}
+
+// Forecasts for the places plans go to (a beach 15 km away can have different weather than the city).
+const localWx = {};
+const locKey = (i) => `${i.lat.toFixed(2)},${i.lon.toFixed(2)}`;
+const needsLocal = (i) => i && i.lat != null && distKm(city, i) >= 4;
+function localH(info) {
+  if (!needsLocal(info)) return null;
+  const e = localWx[locKey(info)];
+  return e && e.H ? e.H : null;
+}
+async function loadLocalForecasts() {
+  if (!wx) return;
+  const need = new Map();
+  plans.forEach((p) => {
+    const i = whereInfo(p.where, p.title);
+    if (needsLocal(i) && !localWx[locKey(i)]) need.set(locKey(i), i);
+  });
+  if (!need.size) return;
+  await Promise.all([...need].map(async ([k, i]) => {
+    localWx[k] = { H: null };
+    try {
+      const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${i.lat}&longitude=${i.lon}&hourly=${HOURLY}&timezone=auto&forecast_days=7`);
+      if (r.ok) localWx[k].H = parseHourly(await r.json());
+    } catch (e) {}
+  }));
+  render();
+}
+
+function hoursRange(date, sh, eh, H = wx.H) {
+  const out = [];
+  for (let h = sh; h < Math.max(eh, sh + 1); h++) { const w = H[hourKey(date, h)]; if (w) out.push(w); }
+  return out;
+}
+function planHours(p) {
+  const s = toMin(p.start), e = Math.max(toMin(p.end), s + 30);
+  return [Math.floor(s / 60), Math.ceil(e / 60)];
+}
+
+function evaluate(lim, hrs) {
+  if (!hrs.length) return [];
+  const max = (k) => Math.max(...hrs.map((x) => x[k]));
+  const min = (k) => Math.min(...hrs.map((x) => x[k]));
+  const out = [];
+  if (hrs.some((x) => x.code >= 95)) out.push({ kind: 'storm', lvl: 'danger', text: 'Возможна гроза', reason: 'гроза', short: 'гроза' });
+  if (max('pop') >= lim.pop || max('prcp') >= 0.5) out.push({ kind: 'rain', lvl: 'warn', text: `Дождь: вероятность ${max('pop')}%`, reason: 'будет дождь', short: `дождь ${max('pop')}%` });
+  const windLvl = lim.danger ? 'danger' : 'warn';
+  const wMax = Math.round(max('wind')), gMax = Math.round(max('gust'));
+  if (wMax >= lim.wind) out.push({ kind: 'wind', lvl: windLvl, text: `Ветер до ${wMax} км/ч`, reason: `будет ветрено (до ${wMax} км/ч)`, short: `ветер ${wMax} км/ч` });
+  else if (lim.gust && gMax >= lim.gust) out.push({ kind: 'wind', lvl: windLvl, text: `Порывы ветра до ${gMax} км/ч`, reason: `сильные порывы ветра (до ${gMax} км/ч)`, short: `порывы ${gMax} км/ч` });
+  const tMax = Math.round(max('temp')), tMin = Math.round(min('temp'));
+  if (lim.hot && tMax >= lim.hot) out.push({ kind: 'hot', lvl: 'warn', text: `Жарко: до ${tMax}°`, reason: `будет жарко (${tMax}°)`, short: `жара ${tMax}°` });
+  if (lim.cold != null && tMin <= lim.cold) out.push({ kind: 'cold', lvl: 'warn', text: `Холодно: ${tMin}°`, reason: `будет холодно (${tMin}°)`, short: `холодно ${tMin}°` });
+  if (lim.cool && tMin < lim.cool) out.push({ kind: 'cold', lvl: 'warn', text: `Прохладно для моря: ${tMin}°`, reason: 'прохладно для моря', short: `прохладно ${tMin}°` });
+  if (lim.uv && max('uv') >= lim.uv) out.push({ kind: 'uv', lvl: 'note', text: `УФ-индекс ${Math.round(max('uv'))}: возьми крем SPF 50`, reason: 'сильное солнце', short: 'сильное солнце' });
+  return out;
+}
+const isBlocking = (issues) => issues.some((i) => RANK[i.lvl] >= 2);
+const reasons = (issues) => issues.filter((i) => RANK[i.lvl] >= 2).map((i) => i.reason).join(' и ');
+const catLim = (cat) => ({ ...cat.lim, danger: ['paraglide', 'boat', 'balloon'].includes(cat.id) });
+
+// ---------- Places ----------
+// Well-known spots around Fethiye: recognised by name, so "Пляж Олюдениз" gets the forecast for Ölüdeniz itself.
+const KNOWN_SPOTS = [
+  { re: /олюдениз|ölüdeniz|oludeniz|голуб\S* лагун|blue lagoon/i, icon: '🏖️', name: 'Олюдениз', tips: ['Возьми маску для снорклинга: в лагуне красивый подводный мир','Парковка у пляжа быстро заполняется, лучше приехать пораньше'], lat: 36.5497, lon: 29.1150 },
+  { re: /бабада|babada/i, icon: '🪂', name: 'Гора Бабадаг', tips: ['Возьми ветровку: на вершине примерно на 10° холоднее, чем внизу','Дорога на гору идёт по серпантину, заложи на неё около часа'], lat: 36.5336, lon: 29.1735 },
+  { re: /чалыш|çalış|calis/i, icon: '🏖️', name: 'Пляж Чалыш', tips: ['Останься до вечера: здесь один из самых красивых закатов в Фетхие'], lat: 36.6489, lon: 29.1050 },
+  { re: /кабак|kabak/i, icon: '🏖️', name: 'Бухта Кабак', tips: ['Спуск к бухте крутой, надень удобную обувь','Возьми наличные: в кафе у бухты карты принимают не везде'], lat: 36.4613, lon: 29.1253 },
+  { re: /бабоч|butterfly/i, icon: '🦋', name: 'Долина бабочек', tips: ['Туда ходят лодки из Олюдениза, проверь расписание заранее','Возьми маску: у берега прозрачная вода и много рыб'], lat: 36.5263, lon: 29.1125 },
+  { re: /кидрак|kıdrak|kidrak/i, icon: '🏖️', name: 'Пляж Кидрак', tips: ['Возьми маску для снорклинга: у скал хорошо видно рыб','Пляж платный, возьми с собой наличные'], lat: 36.5374, lon: 29.1286 },
+  { re: /саклыкент|saklıkent|saklikent/i, icon: '⛰️', name: 'Каньон Саклыкент', tips: ['Вода в каньоне ледяная даже летом, возьми обувь для воды','Возьми сменную одежду: можно промокнуть до пояса'], lat: 36.4697, lon: 29.4040 },
+  { re: /каякёй|каякей|kayaköy|kayakoy/i, icon: '🍳', name: 'Каякёй', tips: ['После завтрака прогуляйся по заброшенной греческой деревне на холме', 'В выходные лучше забронировать столик заранее'], lat: 36.5770, lon: 29.0880 },
+  { re: /рыбн\S* рын|balık pazar/i, icon: '🐟', name: 'Рыбный рынок Фетхие', tips: ['Цену за приготовление рыбы уточни в кафе заранее'], lat: 36.6223, lon: 29.1100 },
+  { re: /родос|rhodes|rodos/i, icon: '⛴️', name: 'Родос', noTrip: true, tips: ['Для поездки нужен загранпаспорт и шенгенская виза', 'Приезжай в порт Фетхие заранее: посадка и паспортный контроль занимают время'], lat: 36.4349, lon: 28.2176 },
+  { re: /галатск\S* башн|galata tower|galata kules/i, icon: '🗼', name: 'Галатская башня', tips: ['Очередь бывает больше часа: приходи к открытию', 'Балкон узкий, держи телефон крепче, когда фотографируешь'], lat: 41.0256, lon: 28.9741 },
+  { re: /галатск\S* мост|galata bridge|galata köprü/i, icon: '🌉', name: 'Галатский мост', tips: ['На нижнем ярусе моста рыбные кафе, на верхнем рыбаки с удочками'], lat: 41.0201, lon: 28.9731 },
+  { re: /босфор|bosph|bospor/i, icon: '⛴️', name: 'Причал Эминёню', tips: ['Для паромов удобнее всего транспортная карта Istanbulkart', 'На палубе ветрено даже в тёплый день, возьми кофту'], lat: 41.0177, lon: 28.9707 },
+  { re: /айя-соф|айя соф|hagia soph|ayasofya/i, icon: '🕌', name: 'Айя-София', tips: ['Нужна закрытая одежда: плечи и колени прикрыты, женщинам платок на голову', 'Во время намаза вход для туристов закрывают'], lat: 41.0086, lon: 28.9802 },
+  { re: /цистерн|basilica cistern|yerebatan/i, icon: '🏛️', name: 'Цистерна Базилика', tips: ['Внутри темно и влажно, пол может быть скользким'], lat: 41.0084, lon: 28.9779 },
+  { re: /гранд-базар|гранд базар|grand bazaar|kapalıçarşı|капалы/i, icon: '🛍️', name: 'Гранд-базар', tips: ['По воскресеньям базар закрыт', 'Торговаться здесь нормально, начинай с половины цены'], lat: 41.0107, lon: 28.9680 },
+  { re: /эмирган|emirgan/i, icon: '🌷', name: 'Парк Эмирган', tips: ['Весной здесь фестиваль тюльпанов'], lat: 41.1086, lon: 29.0547 },
+  { re: /гёреме|гереме|göreme|goreme/i, icon: '🎈', name: 'Гёреме', tips: ['Шары взлетают на рассвете, выходи из отеля около 5 утра', 'Возьми тёплую кофту: утром в долинах холодно'], lat: 38.6431, lon: 34.8289 },
+  { re: /аванос|avanos/i, icon: '🏺', name: 'Аванос', tips: ['Аванос славится керамикой: посуду можно купить прямо у мастера', 'Надень одежду, которую не жалко испачкать глиной'], lat: 38.7150, lon: 34.8467 },
+  { re: /деринкую|derinkuyu/i, icon: '🕳️', name: 'Деринкую', tips: ['Внутри узкие проходы и низкие потолки, надень удобную обувь', 'Под землёй около +13°, возьми кофту'], lat: 38.3739, lon: 34.7347 },
+  { re: /долин\S* любви|love valley/i, icon: '🐎', name: 'Долина любви', tips: ['Надень закрытую обувь и длинные брюки'], lat: 38.6640, lon: 34.8180 },
+  { re: /красн\S* долин|red valley/i, icon: '🌄', name: 'Красная долина', tips: ['Приходи за час до заката, чтобы занять место на смотровой'], lat: 38.6540, lon: 34.8640 },
+  { re: /коньяалт|konyaalt/i, icon: '🏖️', name: 'Пляж Коньяалты', tips: ['Пляж галечный, пригодятся тапочки для воды'], lat: 36.8770, lon: 30.6560 },
+  { re: /калеичи|kaleiçi|kaleici/i, icon: '🏛️', name: 'Калеичи', tips: ['Улочки мощёные и узкие, надень удобную обувь'], lat: 36.8840, lon: 30.7050 },
+  { re: /дюден|düden|duden/i, icon: '💦', name: 'Водопады Дюден', tips: ['Возле водопада брызги, защити телефон'], lat: 36.9590, lon: 30.7310 },
+  { re: /гёджек|геджек|göcek|gocek/i, icon: '⛵', name: 'Гёджек', tips: ['Отсюда уходят лодки по бухтам, договорись о туре заранее'], lat: 36.7540, lon: 28.9390 },
+];
+function spotFor(title) {
+  const s = title && KNOWN_SPOTS.find((x) => x.re.test(title));
+  return s ? { icon: s.icon, name: s.name, lat: s.lat, lon: s.lon, tips: s.tips || [], noTrip: !!s.noTrip, spot: true } : null;
+}
+function whereInfo(w, title) {
+  if (!w || w.type === 'none') return spotFor(title);
+  if (w.type === 'home') return places.find((p) => p.id === 'home');
+  if (w.type === 'place') return places.find((p) => p.id === w.id) || null;
+  if (w.type === 'addr') return { icon: '📍', name: w.name, lat: w.lat, lon: w.lon };
+  return null;
+}
+function distKm(a, b) {
+  if (!a || !b || a.lat == null || b.lat == null) return null;
+  const R = 6371, r = Math.PI / 180;
+  const dLat = (b.lat - a.lat) * r, dLon = (b.lon - a.lon) * r;
+  const x = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(x)) * 1.3; // ×1.3: roads are not straight lines
+}
+
+// ---------- Transport ----------
+const MODES = [
+  { id: 'walk', label: 'Пешком', speed: 4.5, extra: 0, maxKm: 5, lim: { pop: 50, wind: 40, hot: 33, cold: 0 } },
+  { id: 'scooter', label: 'Самокат', speed: 13, extra: 2, maxKm: 12, lim: { pop: 30, wind: 25, hot: 35, cold: 5 } },
+  { id: 'bike', label: 'Велосипед', speed: 14, extra: 3, maxKm: 15, lim: { pop: 40, wind: 30, hot: 32, cold: 3 } },
+  { id: 'car', label: 'Машина', speed: 32, extra: 5, maxKm: Infinity },
+];
+function modeEval(mode, w, dist) {
+  const min = dist == null ? null : Math.max(3, Math.round(dist / mode.speed * 60) + mode.extra);
+  const res = { mode, min };
+  if (dist != null && dist > mode.maxKm) return { ...res, status: 'far', text: `Далеко: ~${Math.round(dist)} км` };
+  if (!w) return { ...res, status: 'ok', text: 'Нет прогноза' };
+  if (mode.id === 'car') {
+    if (w.code >= 95) return { ...res, status: 'note', text: 'Гроза, едь осторожно' };
+    if (w.pop >= 50 || w.prcp >= 0.5) return { ...res, status: 'ok', text: 'Дождь не помешает' };
+    return { ...res, status: 'ok', text: 'Комфортно' };
+  }
+  const iss = evaluate(mode.lim, [w]).filter((i) => RANK[i.lvl] >= 2);
+  if (iss.length) return { ...res, status: 'warn', text: iss.map((i) => i.short).join(', ') };
+  return { ...res, status: 'ok', text: 'Комфортно' };
+}
+function tripOptions(date, h, dist, H) {
+  const w = H[hourKey(date, h)];
+  const opts = MODES.map((m) => modeEval(m, w, dist));
+  const ok = (id, maxMin) => opts.find((o) => o.mode.id === id && o.status === 'ok' && (o.min == null || o.min <= maxMin));
+  const best = ok('walk', 25) || ok('bike', 35) || ok('scooter', 35) || opts.find((o) => o.mode.id === 'car');
+  const forcedByWeather = best.mode.id === 'car'
+    && opts.some((o) => o.mode.id !== 'car' && o.status === 'warn' && (o.min == null || o.min <= 35));
+  return { w, opts, best, forcedByWeather };
+}
+function buildTrip(plan, info, sh, eh) {
+  const homePlace = places.find((p) => p.id === 'home');
+  const homeNear = homePlace && homePlace.lat != null && distKm(homePlace, info) <= 60;
+  const home = homeNear ? homePlace : { name: 'центр города ' + city.name, lat: city.lat, lon: city.lon, center: true };
+  const d = distKm(home, info);
+  const leaveHour = Math.max(0, Math.floor((toMin(plan.start) - 20) / 60));
+  // Use the destination's own forecast when it is far from the chosen city (e.g. a Fethiye plan while the city is Cappadocia).
+  const H = localH(info) || wx.H;
+  const go = tripOptions(plan.date, leaveHour, d, H);
+  const back = eh <= 23 ? tripOptions(plan.date, eh, d, H) : null;
+  return { d, home, info, go, back, fromCenter: !!home.center, hasHome: homePlace && homePlace.lat != null, forced: go.forcedByWeather || (back && back.forcedByWeather) };
+}
+
+function seedPlaces() {
+  places = [
+    { id: 'home', icon: '🏠', name: 'Дом', addr: 'Чалыш, Фетхие', lat: 36.6489, lon: 29.1050, example: true },
+    { id: 'office', icon: '🏢', name: 'Офис', addr: 'Центр Фетхие', lat: 36.6215, lon: 29.1155, example: true },
+    { id: 'gym', icon: '🏋️', name: 'Тренировка', addr: 'Спортзал у марины', lat: 36.6229, lon: 29.1046, example: true },
+  ];
+  save(LS_PLACES, places);
+}
+function seedPlans() {
+  const d1 = wx.days[1].date, d2 = wx.days[2].date, d3 = wx.days[3].date;
+  plans = [
+    { id: 'ex1', date: d1, start: '10:00', end: '13:00', title: 'Работа', where: { type: 'place', id: 'office' }, example: true },
+    { id: 'ex2', date: d1, start: '13:00', end: '17:00', title: 'Работа', where: { type: 'home' }, example: true },
+    { id: 'ex3', date: d1, start: '18:00', end: '20:00', title: 'Прогулка по набережной', where: { type: 'none' }, example: true },
+    { id: 'ex4', date: d2, start: '10:00', end: '12:00', title: 'Полёт на параплане с Бабадага', where: { type: 'none' }, example: true },
+    { id: 'ex5', date: d2, start: '19:00', end: '20:30', title: 'Тренировка', where: { type: 'place', id: 'gym' }, example: true },
+    { id: 'ex6', date: d3, start: '11:00', end: '15:00', title: 'Пляж Олюдениз', where: { type: 'none' }, example: true },
+  ];
+  save(LS_PLANS, plans);
+}
+
+// ---------- Analysis ----------
+function overlaps(date, sMin, eMin, exceptId) {
+  return plans.some((p) => p.date === date && p.id !== exceptId && toMin(p.start) < eMin && toMin(p.end) > sMin);
+}
+
+// Nearest free, good-weather window of the same length: same day first, then the next days.
+function findSlot(cat, plan, H) {
+  const [sh, eh] = planHours(plan);
+  const dur = Math.max(1, eh - sh);
+  const start = wx.days.findIndex((d) => d.date === plan.date);
+  for (let di = start; di < wx.days.length; di++) {
+    const dd = wx.days[di].date;
+    const cands = [];
+    for (let x = 7; x + dur <= 21; x++) {
+      if (dd === nowDate && x <= nowHour) continue;
+      if (di === start && x === sh) continue;
+      if (overlaps(dd, x * 60, (x + dur) * 60, plan.id)) continue;
+      const hs = hoursRange(dd, x, x + dur, H);
+      if (hs.length && !isBlocking(evaluate(catLim(cat), hs))) cands.push(x);
+    }
+    if (cands.length) {
+      cands.sort((a, b) => Math.abs(a - sh) - Math.abs(b - sh));
+      return { date: dd, hour: cands[0], dur, same: di === start };
+    }
+  }
+  return null;
+}
+
+// "перед «Работа»" / "после «Работа»" so the suggestion reads like a person would say it.
+function relativeTo(plan, slot) {
+  if (!slot.same) return '';
+  const others = plans.filter((p) => p.date === plan.date && p.id !== plan.id).sort((a, b) => toMin(a.start) - toMin(b.start));
+  const sEnd = (slot.hour + slot.dur) * 60, sStart = slot.hour * 60, orig = toMin(plan.start);
+  const next = others.find((p) => toMin(p.start) >= sEnd);
+  if (next && orig >= toMin(next.end) - 1) return ` перед «${next.title}»`;
+  const prev = [...others].reverse().find((p) => toMin(p.end) <= sStart);
+  if (prev && orig < toMin(prev.start)) return ` после «${prev.title}»`;
+  return '';
+}
+
+// For a rained-out walk/run: walk to (or from) a place you are going anyway, if that leg is dry.
+function combineWalk(plan) {
+  const home = places.find((p) => p.id === 'home');
+  for (const p of plans) {
+    if (p.date !== plan.date || p.id === plan.id) continue;
+    const info = whereInfo(p.where, p.title);
+    if (!info || p.where.type === 'home') continue;
+    const d = distKm(home, info);
+    if (d == null || d > 5) continue;
+    const legs = [[Math.floor(toMin(p.start) / 60), 'до', `к ${p.start}`], [Math.floor(toMin(p.end) / 60), 'обратно с', `в ${p.end}`]];
+    for (const [h, word, when] of legs) {
+      if (plan.date === nowDate && h <= nowHour) continue;
+      const leg = modeEval(MODES[0], wx.H[hourKey(plan.date, h)], d);
+      if (leg.status === 'ok') {
+        return `Или совмести прогулку с дорогой: пройдись пешком ${word} «${p.title}» ${when}, это около ${leg.min} мин, и будет сухо.`;
+      }
+    }
+  }
+  return null;
+}
+
+function analyze(plan) {
+  // A plan made from an idea remembers the idea's type, so «Галатская башня» is checked as an outdoor visit.
+  const cat = plan.cat ? CATS.find((c) => c.id === plan.cat) : CATS.find((c) => c.re.test(plan.title));
+  const [sh, eh] = planHours(plan);
+  const info = whereInfo(plan.where, plan.title);
+  const work = WORK_RE.test(plan.title);
+  const base = { cat, info, work };
+  if (!wx) return { ...base, state: 'nodata' };
+  if (!wx.days.some((d) => d.date === plan.date)) return { ...base, state: 'far' };
+  if (plan.date < nowDate || (plan.date === nowDate && eh <= nowHour)) return { ...base, state: 'past' };
+  const goesOut = info && !info.noTrip && info.id !== 'home' && !(plan.where && plan.where.type === 'home');
+  const trip = goesOut ? buildTrip(plan, info, sh, eh) : null;
+
+  if (cat) {
+    const H = localH(info) || wx.H;
+    const issues = evaluate(catLim(cat), hoursRange(plan.date, sh, eh, H));
+    const level = issues.reduce((m, i) => (RANK[i.lvl] > RANK[m] ? i.lvl : m), 'ok');
+    const blocked = RANK[level] >= 2;
+    const slot = blocked ? findSlot(cat, plan, H) : null;
+    const combo = blocked && (cat.id === 'walk' || cat.id === 'run') ? combineWalk(plan) : null;
+    return { ...base, state: 'outdoor', H, localUsed: H !== wx.H, issues, level, slot, combo, trip };
+  }
+  if (plan.where && plan.where.type === 'home') return { ...base, state: 'home', level: 'ok' };
+  if (trip) return { ...base, state: 'trip', trip, level: trip.forced ? 'warn' : 'ok' };
+  return { ...base, state: 'indoor', level: 'ok' };
+}
+
+function chipFor(a) {
+  switch (a.state) {
+    case 'past': return '<span class="chip muted">Уже прошло</span>';
+    case 'far': return '<span class="chip muted">Прогноза ещё нет</span>';
+    case 'nodata': return '<span class="chip muted">Нет прогноза</span>';
+    case 'home': return `<span class="chip ok">${a.work ? 'Работа из дома' : 'Дома'}: погода не важна</span>`;
+    case 'indoor': return '<span class="chip ok">Погода не мешает</span>';
+    case 'trip': return a.level === 'warn' ? '<span class="chip warn">Погода: лучше на машине</span>' : '<span class="chip ok">Дорога в порядке</span>';
+    default: return {
+      ok: '<span class="chip ok">Погода подходит</span>',
+      note: '<span class="chip note">Подходит, но есть совет</span>',
+      warn: '<span class="chip warn">Стоит подумать</span>',
+      danger: '<span class="chip danger">Лучше перенести</span>',
+    }[a.level];
+  }
+}
+const isFlagged = (a) => (a.state === 'outdoor' || a.state === 'trip') && RANK[a.level] >= 2;
+
+// ---------- Rendering ----------
+function renderWeek() {
+  const el = $('week');
+  if (!wx) { el.innerHTML = ''; return; }
+  el.innerHTML = wx.days.map((d) => {
+    const flagged = plans.filter((p) => p.date === d.date).map(analyze).filter(isFlagged);
+    const flag = flagged.length
+      ? `<span class="flag ${flagged.some((a) => a.level === 'danger') ? 'danger' : ''}" title="Планов с предупреждением: ${flagged.length}">${flagged.length}</span>` : '';
+    const w = wmo(d.code);
+    return `<button class="day" type="button" data-date="${d.date}" aria-pressed="${d.date === selected}">
+      ${flag}
+      <span class="wd">${d.date === nowDate ? 'сегодня' : fmtDay(d.date, { weekday: 'short' })}</span>
+      <span>${fmtDay(d.date, { day: 'numeric', month: 'short' })}</span>
+      <span class="glyph" title="${w.label}">${w.g}</span>
+      <span class="m ${tClass(d.max)}">${ICON.temp}${Math.round(d.max)}° / ${Math.round(d.min)}°</span>
+      ${mRain(d.pop)}
+      ${mWind(d.wind)}
+    </button>`;
+  }).join('');
+}
+
+function whereTag(a, p) {
+  if (p.where && p.where.type === 'home') return '<span class="tag">🏠 Дома</span>';
+  if (a.info) return `<span class="tag">${a.info.icon} ${esc(a.info.name)}</span>`;
+  return '';
+}
+
+const ICON_MODE = {
+  walk: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13" cy="4.3" r="2" fill="currentColor" stroke="none"/><path d="M12.6 7.6 11.4 13"/><path d="M12.3 8.8 9 11.2"/><path d="M12.3 8.8l3.3 2.6"/><path d="M11.4 13 9 20"/><path d="M11.4 13l3 3 .6 4"/></svg>',
+  scooter: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5" cy="18" r="2.4"/><circle cx="19" cy="18" r="2.4"/><path d="M7.4 18h9.2"/><path d="M17.6 16.8 15 5"/><path d="M12.8 5h4.4"/></svg>',
+  bike: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5.5" cy="16.5" r="3.5"/><circle cx="18.5" cy="16.5" r="3.5"/><path d="M5.5 16.5 10 9h5.5l3 7.5"/><path d="M10 9l2 7.5h-6.5"/><path d="M12 16.5 15.5 9"/><path d="M8.8 7h2.6"/><path d="M15.5 9 15 6.5h2"/></svg>',
+  car: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 16v-4l2.2-5h13.6L21 12v4z"/><path d="M5.5 12h13"/><circle cx="7.2" cy="16.6" r="1.8" fill="currentColor"/><circle cx="16.8" cy="16.6" r="1.8" fill="currentColor"/></svg>',
+};
+
+function renderLeg(label, leg, startMin, isGo) {
+  const w = leg.w;
+  const tiles = leg.opts.map((o) => {
+    const best = o === leg.best;
+    const time = o.min == null ? 'время ?' : `~${o.min} мин`;
+    const leave = isGo && o.min != null && o.status !== 'far' ? `<span class="leave">выйти в ${fromMin(Math.max(0, startMin - o.min))}</span>` : '';
+    return `<div class="mode ${o.status} ${best ? 'best' : ''}">
+      <span class="mi">${ICON_MODE[o.mode.id]}</span>
+      <span class="mn">${o.mode.label}${best ? ' <span class="star" title="Лучший вариант">★</span>' : ''}</span>
+      <span class="mt">${time}</span>${leave}
+      <span class="ms">${esc(o.text)}</span>
+    </div>`;
+  }).join('');
+  const metrics = w ? `<span class="metrics">${mTemp(w.temp)}${mRain(w.pop)}${mWind(w.wind)}</span>` : '';
+  return `<div class="leg2"><div class="leg-head"><span class="lbl">${label}</span>${metrics}</div><div class="modes">${tiles}</div></div>`;
+}
+
+function renderTrip(p, t) {
+  let html = `<p class="trip-from">Маршрут от: <b>${t.fromCenter ? '📍 ' + esc(t.home.name) : '🏠 Дом'}</b></p>`;
+  html += renderLeg(`Туда, к ${p.start}`, t.go, toMin(p.start), true);
+  if (t.back) html += renderLeg(`Обратно, в ${p.end}`, t.back, 0, false);
+  const dest = `${t.info.lat},${t.info.lon}`;
+  const url = t.home && t.home.lat != null
+    ? `https://www.google.com/maps/dir/?api=1&origin=${t.home.lat},${t.home.lon}&destination=${dest}`
+    : `https://www.google.com/maps/search/?api=1&query=${dest}`;
+  html += `<a class="route" href="${url}" target="_blank" rel="noopener">Маршрут в Google Картах ↗</a>`;
+  if (t.fromCenter) {
+    html += `<p class="hint">Маршрут посчитан от центра города (${esc(city.name)}). ${t.hasHome ? 'Твой дом далеко отсюда.' : 'Адрес дома не указан.'} Если ты остановилась в отеле, добавь его в «Мои места» и выбери как место плана, или укажи адрес дома, если живёшь здесь.</p>`;
+  }
+  return `<div class="trip2">${html}</div>`;
+}
+
+function renderPlan(p) {
+  const a = analyze(p);
+  let body = '';
+  const range = `${p.start}–${p.end}`;
+  if (a.state === 'outdoor' && RANK[a.level] >= 2) {
+    const there = a.info ? 'там ' : '';
+    const verdict = a.cat.id === 'beach'
+      ? `Не рекомендую ехать на этот пляж в ${range}: ${there}${reasons(a.issues)}.`
+      : `Не рекомендую «${p.title}» в ${range}: ${there}${reasons(a.issues)}.`;
+    body += `<p class="verdict ${a.level}">${esc(verdict)}</p>`;
+  }
+  if (a.state === 'outdoor' && a.issues.length) {
+    body += `<ul class="issues">${a.issues.map((i) => `<li>${issueIcon(i.kind)}<span>${esc(i.text)}</span></li>`).join('')}</ul>`;
+  }
+  if (a.state === 'outdoor' && RANK[a.level] >= 2) {
+    if (a.slot) {
+      const s = a.slot;
+      const w = a.H[hourKey(s.date, s.hour)];
+      const sRange = `${pad(s.hour)}:00–${pad(s.hour + s.dur)}:00`;
+      const when = s.same ? `${relativeTo(p, s)}: ${sRange}` : ` на ${fmtDay(s.date)}, ${sRange}`;
+      body += `<div class="suggest"><p>Лучше перенести${esc(when)}
+          <small>В это время: ${wmo(w.code).label.toLowerCase()}, ${Math.round(w.temp)}°, дождь ${w.pop}%, ветер ${Math.round(w.wind)} км/ч</small></p>
+        <button class="btn" type="button" data-move="${p.id}" data-date="${s.date}" data-hour="${s.hour}">Перенести</button></div>`;
+    } else {
+      body += '<div class="suggest"><p>В ближайшие 7 дней свободного окна с хорошей погодой нет.</p></div>';
+    }
+    if (a.combo) body += `<p class="hint">${esc(a.combo)}</p>`;
+  }
+  if (a.state === 'home') body += `<p class="hint">${a.work ? 'Работаешь из дома, дорога не нужна. Хорошего дня!' : 'Ты дома, погода не помешает.'}</p>`;
+  if (a.trip && (a.state === 'trip' || a.state === 'outdoor')) body += renderTrip(p, a.trip);
+  if (a.state === 'indoor') body += '<p class="hint">Похоже, это в помещении. Если нужно ехать, укажи место, и я подскажу про дорогу.</p>';
+  const tag = a.cat ? `<span class="tag">${a.cat.label}</span>` : '';
+  const ex = p.example ? '<span class="tag">пример</span>' : '';
+  const fc = a.localUsed ? `<span class="tag">прогноз для: ${esc(a.info.name)}</span>` : '';
+  return `<article class="plan ${p.id === editingId ? 'editing' : ''}">
+    <span class="time"><span>${esc(p.start)}</span><span>${esc(p.end)}</span></span>
+    <div><div class="title">${esc(p.title)}</div><div class="meta">${chipFor(a)}${whereTag(a, p)}${tag}${fc}${ex}</div></div>
+    <span class="plan-actions">
+      <button class="icon-btn" type="button" data-edit="${p.id}" aria-label="Изменить план" title="Изменить">✎</button>
+      <button class="icon-btn" type="button" data-del="${p.id}" aria-label="Удалить план" title="Удалить">×</button>
+    </span>
+    ${body ? `<div class="body">${body}</div>` : ''}
+  </article>`;
+}
+
+function renderDay() {
+  const title = fmtDay(selected, { weekday: 'long', day: 'numeric', month: 'long' });
+  $('day-title').textContent = title.charAt(0).toUpperCase() + title.slice(1);
+  const day = wx && wx.days.find((d) => d.date === selected);
+  $('day-summary').innerHTML = day
+    ? `<span>${wmo(day.code).g} ${wmo(day.code).label}</span><span class="m ${tClass(day.max)}">${ICON.temp}${Math.round(day.min)}°…${Math.round(day.max)}°</span>${mRain(day.pop)}${mWind(day.wind)}`
+    : '';
+  const list = plans.filter((p) => p.date === selected).sort((a, b) => toMin(a.start) - toMin(b.start));
+  let html = plans.some((p) => p.example)
+    ? '<div class="examples-note"><span>Сейчас в календаре примеры, чтобы показать, как всё работает. Их видит каждый новый посетитель, твои собственные планы видишь только ты.</span><button class="btn-ghost" type="button" data-clear-examples>Убрать примеры</button></div>'
+    : '';
+  html += list.length
+    ? list.map(renderPlan).join('')
+    : '<div class="empty">На этот день планов нет. Добавь первый в форме справа.</div>';
+  // Plans outside the 7-day forecast (past or later) stay reachable here, so they can be fixed or removed.
+  if (wx) {
+    const inWeek = new Set(wx.days.map((d) => d.date));
+    const other = plans.filter((p) => !inWeek.has(p.date)).sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start));
+    if (other.length) {
+      html += `<div class="card other"><h3>Планы вне ближайшей недели</h3><ul class="other-list">${other.map((p) => `<li>
+          <span class="od">${fmtDay(p.date, { day: 'numeric', month: 'short', year: p.date.slice(0, 4) !== nowDate.slice(0, 4) ? 'numeric' : undefined })}, ${esc(p.start)}</span>
+          <span class="ot">${esc(p.title)}${p.date < nowDate ? ' <span class="tag">прошло</span>' : ''}</span>
+          <span class="plan-actions">
+            <button class="icon-btn" type="button" data-edit="${p.id}" aria-label="Изменить план" title="Изменить">✎</button>
+            <button class="icon-btn" type="button" data-del="${p.id}" aria-label="Удалить план" title="Удалить">×</button>
+          </span></li>`).join('')}</ul>
+        <p class="hint">Погоду для них я проверю, когда до плана останется меньше недели.</p></div>`;
+    }
+  }
+  $('plans').innerHTML = html;
+}
+
+function renderHours() {
+  const el = $('hours');
+  if (!wx) { el.innerHTML = '<p class="hint">Нет данных</p>'; return; }
+  let html = '';
+  for (let h = 6; h <= 23; h++) {
+    const w = wx.H[hourKey(selected, h)];
+    if (!w) continue;
+    html += `<div class="hour ${w.pop >= 40 ? 'wet' : ''}" title="${wmo(w.code).label}">
+      <span class="h">${pad(h)}:00</span><span class="g">${wmo(w.code).g}</span>
+      ${mTemp(w.temp, 't')}${mRain(w.pop)}<span class="m m-wind">${ICON.wind}${Math.round(w.wind)}</span></div>`;
+  }
+  el.innerHTML = html;
+}
+
+// Ideas: a set per region (by distance from the chosen city), generic ones elsewhere.
+// kind: undefined = activity by weather, 'food' = cafes and breakfasts, 'trip' = getaways.
+// Outdoor ideas need a free window with good weather; indoor ideas go to the rainiest free day.
+const mapsSearch = (q) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
+const mapsNear = (q, c) => `https://www.google.com/maps/search/${encodeURIComponent(q)}/@${c.lat},${c.lon},14z`;
+const ddmm = (date) => date.slice(8, 10) + date.slice(5, 7);
+const ticketsSearch = (q) => `https://www.google.com/search?q=${encodeURIComponent(q + ' official tickets')}`;
+const MUZE = { label: 'Билеты (muze.gov.tr)', url: 'https://muze.gov.tr' };
+const CROWD = 'Одно из самых посещаемых туристами мест: лучше прийти в будний день, к открытию';
+const IDEAS_FETHIYE = [
+  { title: 'Пляж Олюдениз', cat: 'beach', hour: 11, wiki: 'Ölüdeniz', why: 'Бирюзовая лагуна, вода спокойная', crowd: 'В выходные на пляже многолюдно: в будний день и до 11:00 спокойнее' },
+  { title: 'Полёт на параплане с Бабадага', cat: 'paraglide', hour: 10, wiki: 'Ölüdeniz', why: 'Слабый ветер, хорошая видимость. Полёт над лагуной Олюдениз',
+    links: [{ label: 'Найти полёт', url: ticketsSearch('Babadağ paragliding Ölüdeniz') }] },
+  { title: 'Лодочный тур по 12 островам', cat: 'boat', hour: 10, dur: 6, wiki: 'Fethiye', why: 'Море без сильного ветра, остановки для купания в бухтах',
+    links: [{ label: 'Найти тур', url: ticketsSearch('Fethiye 12 islands boat tour') }] },
+  { title: 'Каньон Саклыкент', cat: 'walk', hour: 10, wiki: 'Saklıkent_National_Park', why: 'Сухо, тропа не скользкая. Вход оплачивается на месте', crowd: 'Летом к полудню приезжают автобусы с экскурсиями: лучше приехать к 9–10 утра' },
+  { title: 'Ликийская тропа до Кабака', cat: 'walk', hour: 8, wiki: 'Lycian_Way', why: 'Утро без жары и дождя. Одна из самых красивых пеших троп мира' },
+  { title: 'Велопрогулка до Чалыша на закате', cat: 'bike', hour: 17, why: 'Тихий вечер без дождя' },
+  { title: 'Рынок Фетхие по вторникам', indoor: true, weekday: 2, hour: 11, why: 'Крытые ряды, можно гулять и в дождь' },
+
+  { kind: 'food', title: 'Деревенский завтрак в Каякёе', cat: 'outdoor', weekend: true, hour: 10, wiki: 'Kayaköy', why: 'В деревне около 30 мест с турецким «серпме» завтраком. Самые популярные: Senit Ekmek и Cin Bal. В выходные там людно, приезжай до 10:00',
+    links: [{ label: 'Senit Ekmek', url: mapsSearch('Senit Ekmek Kayaköy') }, { label: 'Cin Bal', url: mapsSearch('Cin Bal Kayaköy') }] },
+  { kind: 'food', title: 'Кофе и завтрак в Köşe Kahve', indoor: true, hour: 9, dur: 1, why: 'Одно из самых высоко оценённых кафе Фетхие в отзывах, хвалят турецкий завтрак',
+    links: [{ label: 'Google Карты', url: mapsSearch('Köşe Kahve Fethiye') }] },
+  { kind: 'food', title: 'Завтрак у моря в EY\'s Cafe Bistro', cat: 'outdoor', hour: 10, dur: 1, why: 'Кафе на набережной с видом на море, хвалят английский завтрак и домашние пироги',
+    links: [{ label: 'Google Карты', url: mapsSearch("EY's Cafe Bistro Fethiye") }] },
+  { kind: 'food', title: 'Ужин на рыбном рынке Фетхие', indoor: true, hour: 19, why: 'Выбираешь свежую рыбу на прилавке, и её готовят в одном из кафе вокруг рынка',
+    links: [{ label: 'Google Карты', url: mapsSearch('Fethiye Balık Pazarı') }] },
+
+  { kind: 'trip', title: 'Паром на Родос', cat: 'boat', hour: 8, dur: 10, wiki: 'Rhodes', why: 'Паромы ходят из порта Фетхие несколько раз в неделю, в пути 1,5–2 часа',
+    links: [{ label: 'Расписание и билеты', url: 'https://www.ferryhopper.com/en/ferry-routes/direct/fethiye-rhodes' }] },
+  { kind: 'trip', title: 'Выходные в Стамбуле', weekend: true, saturday: true, hour: 9, dur: 3, wiki: 'Bosphorus_Bridge', why: 'Ближайший аэропорт — Даламан (DLM), около часа на машине. Сравни цены на билеты на эту дату',
+    links: [{ label: 'Авиасейлс', url: (d) => `https://www.aviasales.ru/search/DLM${ddmm(d)}IST1` }, { label: 'Google Flights', url: (d) => `https://www.google.com/travel/flights?q=${encodeURIComponent(`Flights from DLM to IST on ${d}`)}` }] },
+];
+const IDEAS_CAPPADOCIA = [
+  { title: 'Полёт на воздушном шаре над Гёреме', cat: 'balloon', hour: 6, wiki: 'Göreme', why: 'Почти безветренный рассвет: шары летают только в такую погоду. Бронируй заранее, места разбирают',
+    links: [{ label: 'Найти полёт', url: ticketsSearch('Göreme hot air balloon') }] },
+  { title: 'Квадроциклы на закате по долинам', cat: 'atv', hour: 17, wiki: 'Göreme_National_Park', why: 'Сухо, дорога не размокнет',
+    links: [{ label: 'Найти тур', url: ticketsSearch('Göreme ATV sunset tour') }] },
+  { title: 'Конная прогулка по Долине любви', cat: 'horse', hour: 9, why: 'Утро без дождя и сильного ветра' },
+  { title: 'Закат на смотровой Красной долины', cat: 'walk', hour: 17, wiki: 'Göreme_National_Park', why: 'Ясный вечер для фото' },
+  { title: 'Гончарный мастер-класс в Аваносе', indoor: true, hour: 14, wiki: 'Avanos', why: 'Занятие в помещении, хороший план на пасмурный день' },
+  { title: 'Подземный город Деринкую', indoor: true, hour: 11, wiki: 'Derinkuyu_underground_city', why: 'Под землёй всегда около +13°, погода не важна', crowd: CROWD, tickets: MUZE },
+  { kind: 'food', title: 'Завтрак на террасе с видом на шары', cat: 'outdoor', weekend: true, hour: 7, wiki: 'Göreme', why: 'В Гёреме много кафе с террасами, откуда на рассвете видно шары',
+    links: [{ label: 'Кафе с террасой', url: mapsSearch('terrace cafe breakfast Göreme') }] },
+  { kind: 'food', title: 'Ужин в пещерном ресторане', indoor: true, hour: 19, why: 'Рестораны в скальных пещерах, попробуй тести-кебаб в глиняном горшке',
+    links: [{ label: 'Google Карты', url: mapsSearch('cave restaurant Göreme') }] },
+  { kind: 'trip', title: 'Выходные в Стамбуле', weekend: true, saturday: true, hour: 9, dur: 3, wiki: 'Bosphorus_Bridge', why: 'Ближайшие аэропорты: Кайсери (ASR) и Невшехир (NAV). Сравни цены на эту дату',
+    links: [{ label: 'Авиасейлс', url: (d) => `https://www.aviasales.ru/search/ASR${ddmm(d)}IST1` }, { label: 'Google Flights', url: (d) => `https://www.google.com/travel/flights?q=${encodeURIComponent(`Flights from ASR to IST on ${d}`)}` }] },
+];
+const IDEAS_ANTALYA = [
+  { title: 'Пляж Коньяалты', cat: 'beach', hour: 11, wiki: 'Konyaaltı_Beach', why: 'Тёплое море и спокойная погода' },
+  { title: 'Прогулка по старому городу Калеичи', cat: 'walk', hour: 17, wiki: 'Kaleiçi', why: 'Тёплый вечер без дождя' },
+  { title: 'Водопады Дюден', cat: 'walk', hour: 10, wiki: 'Düden_Waterfalls', why: 'Сухо, тропинки не скользкие', crowd: 'В выходные здесь много местных семей: в будний день спокойнее' },
+  { title: 'Канатная дорога на Тюнектепе', cat: 'outdoor', hour: 16, why: 'Хорошая видимость на закате' },
+  { title: 'Археологический музей Антальи', indoor: true, hour: 12, wiki: 'Antalya_Museum', why: 'Музей в помещении, подойдёт на дождливый день', tickets: MUZE },
+  { kind: 'food', title: 'Кофе в старом городе', indoor: true, hour: 10, dur: 1, wiki: 'Kaleiçi', why: 'В Калеичи много маленьких кофеен во дворах старых домов',
+    links: [{ label: 'Кофейни рядом', url: mapsSearch('coffee Kaleiçi Antalya') }] },
+];
+const IDEAS_ISTANBUL = [
+  { title: 'Галатская башня', cat: 'outdoor', hour: 9, wiki: 'Galata', why: 'С балкона на вершине открывается вид на весь старый город и Босфор. В ясную погоду видно дальше всего', crowd: CROWD, tickets: MUZE },
+  { title: 'Прогулка по Босфору на пароме', cat: 'boat', hour: 11, wiki: 'Bosphorus_Bridge', why: 'Спокойная вода и мало ветра. Городские паромы Şehir Hatları дешевле экскурсионных',
+    tickets: { label: 'Паромы Şehir Hatları', url: 'https://www.sehirhatlari.istanbul' } },
+  { title: 'Парк Эмирган', cat: 'walk', hour: 10, wiki: 'Emirgan_Park', why: 'Сухое утро для прогулки' },
+  { title: 'Закат на Галатском мосту', cat: 'walk', hour: 18, wiki: 'Galata_Bridge', why: 'Ясный вечер без дождя' },
+  { title: 'Айя-София', indoor: true, hour: 9, wiki: 'Hagia_Sophia', why: 'Внутри, можно идти в любую погоду', crowd: CROWD, tickets: { label: 'Найти билеты', url: ticketsSearch('Hagia Sophia') } },
+  { title: 'Цистерна Базилика', indoor: true, hour: 9, wiki: 'Basilica_Cistern', why: 'Подземное водохранилище с колоннами, внутри прохладно в любую погоду', crowd: CROWD, tickets: { label: 'Найти билеты', url: ticketsSearch('Basilica Cistern') } },
+  { title: 'Гранд-базар', indoor: true, hour: 13, closed: [0], wiki: 'Grand_Bazaar,_Istanbul', why: 'Крытый рынок, погода не важна. По воскресеньям закрыт', crowd: 'Меньше всего людей в будни до обеда' },
+  { kind: 'food', title: 'Завтрак в Бешикташе', weekend: true, indoor: true, hour: 10, why: 'Улица завтраков в Бешикташе: десятки кафе с турецким завтраком',
+    links: [{ label: 'Google Карты', url: mapsSearch('Beşiktaş kahvaltıcılar sokağı') }] },
+];
+const IDEAS_GENERIC = [
+  { title: 'Велопрогулка', cat: 'bike', hour: 10, why: 'Сухо и не ветрено' },
+  { title: 'Пикник в парке', cat: 'outdoor', hour: 13, why: 'Без дождя' },
+  { title: 'Долгая прогулка по городу', cat: 'walk', hour: 16, why: 'Комфортная погода' },
+  { title: 'Музей или выставка', indoor: true, hour: 13, why: 'Занятие в помещении на дождливый день' },
+  { kind: 'food', title: 'Новая кофейня', indoor: true, hour: 10, dur: 1, why: 'Попробуй место, где ещё не была: посмотри рейтинг и отзывы на карте',
+    links: [{ label: 'Кофейни рядом', url: (d, c) => mapsNear('кофейня', c) }] },
+  { kind: 'food', title: 'Неспешный завтрак в выходной', weekend: true, indoor: true, hour: 10, why: 'Выходной без спешки: выбери кафе с хорошими отзывами о завтраках',
+    links: [{ label: 'Завтраки рядом', url: (d, c) => mapsNear('завтрак', c) }] },
+];
+const REGIONS = [
+  { name: 'Фетхие', lat: 36.62, lon: 29.12, radius: 45, ideas: IDEAS_FETHIYE },
+  { name: 'Каппадокия', lat: 38.64, lon: 34.83, radius: 80, ideas: IDEAS_CAPPADOCIA },
+  { name: 'Анталья', lat: 36.89, lon: 30.70, radius: 50, ideas: IDEAS_ANTALYA },
+  { name: 'Стамбул', lat: 41.01, lon: 28.98, radius: 50, ideas: IDEAS_ISTANBUL },
+];
+const regionFor = (c) => REGIONS.find((r) => distKm(c, r) / 1.3 <= r.radius) || null;
+const isWeekend = (date) => [0, 6].includes(new Date(date + 'T12:00').getDay());
+const isSaturday = (date) => new Date(date + 'T12:00').getDay() === 6;
+
+function placeIdea(idea, taken) {
+  const dur = idea.dur || 2;
+  const cat = idea.cat ? CATS.find((c) => c.id === idea.cat) : null;
+  // Cafes are flexible by an hour or two; activities keep their best time of day.
+  const hours = idea.kind === 'food' ? [idea.hour, idea.hour + 1, idea.hour - 1, idea.hour + 2] : [idea.hour];
+  const clash = (date, h) => taken.some((t) => t.group === idea.groupId && t.date === date && t.hour < h + dur && t.hour + t.dur > h);
+  let best = null;
+  for (let di = 1; di < wx.days.length; di++) {
+    const day = wx.days[di];
+    if (idea.saturday ? !isSaturday(day.date) : idea.weekend && !isWeekend(day.date)) continue;
+    const dow = new Date(day.date + 'T12:00').getDay();
+    if (idea.weekday != null && dow !== idea.weekday) continue;
+    if (idea.closed && idea.closed.includes(dow)) continue;
+    if (idea.crowd && (dow === 0 || dow === 6)) continue;
+    if (idea.cat === 'beach' && day.max < 24) continue;
+    if (plans.some((p) => p.date === day.date && p.title === idea.title)) continue;
+    for (const h of hours) {
+      if (h < 6 || h + dur > 23) continue;
+      if (overlaps(day.date, h * 60, (h + dur) * 60) || clash(day.date, h)) continue;
+      const cand = { idea, dur, hour: h, date: day.date, day, w: wx.H[hourKey(day.date, h)] };
+      if (!cand.w) continue;
+      if (idea.indoor && !idea.kind) {
+        if (!best || day.pop > best.day.pop) best = cand;
+        break;
+      }
+      if (cat && isBlocking(evaluate(catLim(cat), hoursRange(day.date, h, h + dur)))) continue;
+      if (!taken.some((t) => t.date === day.date)) return cand;
+      if (!best) best = cand;
+      break;
+    }
+  }
+  // A flight does not depend on the weather: offer the next Saturday even beyond the forecast.
+  if (!best && idea.saturday && !cat) {
+    const d = new Date(wx.days[0].date + 'T12:00');
+    do d.setDate(d.getDate() + 1); while (d.getDay() !== 6);
+    const date = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    if (!plans.some((p) => p.date === date && p.title === idea.title)) best = { idea, dur, hour: idea.hour, date, day: null, w: null };
+  }
+  return best;
+}
+function pickIdeas() {
+  if (!wx) return [];
+  const region = regionFor(city);
+  const pool = region ? region.ideas : IDEAS_GENERIC;
+  const taken = [];
+  const take = (list, n) => {
+    const out = [];
+    for (const idea of list) {
+      if (out.length >= n) break;
+      const s = placeIdea(idea, taken);
+      if (s) { s.group = idea.kind || 'act'; out.push(s); taken.push(s); }
+    }
+    return out;
+  };
+  pool.forEach((i) => { i.groupId = i.kind || 'act'; });
+  const activities = pool.filter((i) => !i.kind);
+  // Up to three outdoor activities plus one for a rainy day.
+  const act = [...take(activities.filter((i) => !i.indoor), 3), ...take(activities.filter((i) => i.indoor), 1)];
+  const food = take(pool.filter((i) => i.kind === 'food'), 3);
+  const trip = take(pool.filter((i) => i.kind === 'trip'), 2);
+  return [...act.map((s) => ({ ...s, group: 'act' })), ...food.map((s) => ({ ...s, group: 'food' })), ...trip.map((s) => ({ ...s, group: 'trip' }))];
+}
+function whenLabel(date) {
+  const idx = wx.days.findIndex((d) => d.date === date);
+  if (idx === 1) return 'Завтра, ' + fmtDay(date, { day: 'numeric', month: 'short' });
+  if (idx === 2) return 'Послезавтра, ' + fmtDay(date, { day: 'numeric', month: 'short' });
+  return fmtDay(date, { weekday: 'long', day: 'numeric', month: 'short' });
+}
+const ideaWord = (n) => (n % 10 === 1 && n !== 11 ? 'идея' : [2, 3, 4].includes(n % 10) && ![12, 13, 14].includes(n) ? 'идеи' : 'идей');
+const IDEA_GROUPS = [
+  { id: 'act', label: 'По погоде' },
+  { id: 'food', label: 'Кафе и завтраки' },
+  { id: 'trip', label: 'Поездки' },
+];
+let currentIdeas = [];
+function ideaCard(s, i) {
+  const rainy = s.idea.indoor && !s.idea.kind && s.day && s.day.pop >= 40 ? ` В этот день вероятность дождя ${s.day.pop}%.` : '';
+  const end = Math.min(s.hour + s.dur, 23);
+  const cond = !s.w ? 'Прогноза на эту дату пока нет' : s.idea.indoor ? 'В помещении' : `${wmo(s.w.code).g} ${wmo(s.w.code).label}`;
+  const all = [...(s.idea.tickets ? [s.idea.tickets] : []), ...(s.idea.links || [])];
+  const links = all.map((l) => {
+    const url = typeof l.url === 'function' ? l.url(s.date, city) : l.url;
+    return `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(l.label)} ↗</a>`;
+  }).join('');
+  // Every idea gets a drawn cover; a real Wikipedia photo fades in over it when the place has one.
+  const img = `<figure class="idea-img cover-${s.group}" ${s.idea.wiki ? `data-wiki="${esc(s.idea.wiki)}"` : ''}>
+      <span class="cover-icon" aria-hidden="true">${coverIcon(s.idea)}</span>
+      ${s.idea.wiki ? `<img alt="${esc(s.idea.title)}" decoding="async"><figcaption hidden>Фото: Википедия</figcaption>` : ''}
+    </figure>`;
+  return `<article class="idea">
+      ${img}
+      <span class="when">${whenLabel(s.date)} · ${pad(s.hour)}:00–${pad(end)}:00</span>
+      <span class="what">${esc(s.idea.title)}</span>
+      <p>${esc(s.idea.why)}.${rainy} ${cond}</p>
+      ${s.idea.crowd ? `<p class="crowd">👥 ${esc(s.idea.crowd)}</p>` : ''}
+      ${s.w ? `<div class="metrics">${mTemp(s.w.temp)}${mRain(s.w.pop)}${mWind(s.w.wind)}</div>` : ''}
+      ${links ? `<div class="idea-links">${links}</div>` : ''}
+      <div class="idea-actions">
+        <button class="btn-idea" type="button" data-idea="${i}">＋ В мои планы</button>
+        <button class="btn-idea ghost" type="button" data-idea-edit="${i}">✎ Выбрать своё время</button>
+      </div>
+    </article>`;
+}
+
+const COVER_ICONS = { beach: '🏖️', paraglide: '🪂', boat: '⛵', walk: '🥾', run: '👟', bike: '🚲', balloon: '🎈', atv: '🏍️', horse: '🐎', outdoor: '🧺' };
+function coverIcon(idea) {
+  if (idea.kind === 'food') return /завтрак/i.test(idea.title) ? '🍳' : /ужин|рыб/i.test(idea.title) ? '🍽️' : '☕';
+  if (idea.kind === 'trip') return /паром|ферри/i.test(idea.title) ? '⛴️' : '✈️';
+  return COVER_ICONS[idea.cat] || (idea.indoor ? '🏛️' : '🌤️');
+}
+// Photos come from Wikipedia page summaries; cached per browser so each page is asked once.
+const WIKI_CACHE_KEY = 'sky.wikiImg.v2';
+const wikiCache = load(WIKI_CACHE_KEY, {});
+const wikiPending = {};
+function wikiImage(title) {
+  if (title in wikiCache) return Promise.resolve(wikiCache[title]);
+  if (!wikiPending[title]) {
+    wikiPending[title] = fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        // Only real photos: skip logos (unscaled) and diagrams (svg). 500px is one of Wikimedia's standard sizes.
+        const t = d && d.thumbnail ? d.thumbnail.source : '';
+        const src = t && !/thumbnail_unscaled|\.svg/i.test(t) ? t.replace(/\/\d+px-/, '/500px-') : null;
+        wikiCache[title] = src;
+        save(WIKI_CACHE_KEY, wikiCache);
+        return src;
+      })
+      .catch(() => null);
+  }
+  return wikiPending[title];
+}
+function loadIdeaImages() {
+  document.querySelectorAll('.idea-img[data-wiki]').forEach((fig) => {
+    wikiImage(fig.dataset.wiki).then((src) => {
+      if (!src) return;
+      const img = fig.querySelector('img');
+      const shown = () => { fig.classList.add('has-photo'); fig.querySelector('figcaption').hidden = false; };
+      img.onload = shown;
+      img.src = src;
+      if (img.complete && img.naturalWidth) shown();
+    });
+  });
+}
+
+function renderIdeas() {
+  currentIdeas = pickIdeas();
+  const region = wx ? regionFor(city) : null;
+  $('ideas-wrap').hidden = !currentIdeas.length;
+  $('ideas-title').textContent = `Идеи на ближайшие дни · ${region ? region.name : city.name}`;
+  $('ideas-count').textContent = `${currentIdeas.length} ${ideaWord(currentIdeas.length)}`;
+  $('ideas-preview').textContent = currentIdeas.map((s) => s.idea.title).join(' · ');
+  $('ideas').innerHTML = IDEA_GROUPS.map((g) => {
+    const items = currentIdeas.map((s, i) => [s, i]).filter(([s]) => s.group === g.id);
+    if (!items.length) return '';
+    return `<section class="idea-group"><h4>${g.label}</h4><div class="idea-grid">${items.map(([s, i]) => ideaCard(s, i)).join('')}</div></section>`;
+  }).join('');
+  loadIdeaImages();
+}
+
+function renderPlaces() {
+  $('places').innerHTML = places.map((p) => `<li>
+      <span class="pi">${p.icon}</span>
+      <span class="pn">${esc(p.name)}${p.example ? '<span class="tag">пример</span>' : ''}</span>
+      ${p.id === 'home'
+        ? `<button class="link-btn" type="button" data-home-edit>${p.lat == null ? 'указать адрес' : 'изменить'}</button>`
+        : `<button class="del" type="button" data-place-del="${p.id}" aria-label="Удалить место">×</button>`}
+      <span class="pa">${p.addr ? esc(p.addr) : 'Адрес не указан'}${p.lat != null ? ` · <a href="https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lon}" target="_blank" rel="noopener">на карте ↗</a>` : ''}</span>
+    </li>`).join('');
+}
+
+// ---------- Add-plan form: "where" question ----------
+let formWhere = null;      // 'home' | 'place:<id>' | 'none' | 'new'
+let whereTouched = false;
+let pickedAddr = null;
+let addrIcon = '🏢';
+
+function renderWhere() {
+  const work = WORK_RE.test($('plan-title').value);
+  if (!whereTouched) formWhere = work ? null : 'none';
+  $('where-q').textContent = work ? 'Будешь работать из дома? Если нет, выбери место:' : 'Где это будет?';
+  const chips = [
+    { v: 'home', label: work ? '🏠 Да, из дома' : '🏠 Дома' },
+    ...places.filter((p) => p.id !== 'home').map((p) => ({ v: 'place:' + p.id, label: `${p.icon} ${p.name}` })),
+    { v: 'new', label: '＋ Другой адрес' },
+    { v: 'none', label: 'Без адреса' },
+  ];
+  $('where-chips').innerHTML = chips.map((c) =>
+    `<button type="button" class="choice" data-where="${c.v}" aria-pressed="${formWhere === c.v}">${esc(c.label)}</button>`).join('');
+  $('new-addr').hidden = formWhere !== 'new';
+}
+function renderIconChoices(el, current) {
+  el.innerHTML = PLACE_ICONS.map((i) => `<button type="button" class="choice" data-icon="${i}" aria-pressed="${i === current}">${i}</button>`).join('');
+}
+
+// Address search: suggestions while typing (Photon / OpenStreetMap) or a pasted Google Maps link.
+function parseMapsLink(text) {
+  const t = text.trim();
+  if (/maps\.app\.goo\.gl|goo\.gl\/maps/i.test(t)) {
+    return { error: 'Короткую ссылку из приложения прочитать не получится. Открой её в браузере и скопируй длинную ссылку из адресной строки.' };
+  }
+  const m = t.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/)
+    || t.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)
+    || t.match(/[?&](?:q|query|ll|destination)=(-?\d+\.\d+)(?:,|%2C)\s*(-?\d+\.\d+)/i)
+    || t.match(/^(-?\d{1,2}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)$/);
+  if (!m) return null;
+  const nm = t.match(/\/place\/([^/@?]+)/);
+  const name = nm ? decodeURIComponent(nm[1].replace(/\+/g, ' ')) : 'Точка из Google Карт';
+  return { full: name, short: name, lat: +m[1], lon: +m[2] };
+}
+async function searchAddress(q) {
+  const r = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=6&lat=${city.lat}&lon=${city.lon}`);
+  const d = await r.json();
+  return d.features.map((f) => {
+    const p = f.properties;
+    const street = [p.street, p.housenumber].filter(Boolean).join(' ');
+    const town = p.city || p.town || p.village || p.district || '';
+    const line1 = p.name || street;
+    const rest = [p.name && street ? street : '', p.district !== town ? p.district : '', town, p.country].filter(Boolean).join(', ');
+    return { full: rest ? `${line1}, ${rest}` : line1, short: [line1, town].filter(Boolean).join(', '), lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0] };
+  }).filter((x) => x.short);
+}
+let searchSeq = 0;
+async function runSearch(q, box, onPick) {
+  q = q.trim();
+  if (q.length < 3) { box.innerHTML = ''; return; }
+  const link = parseMapsLink(q);
+  if (link && link.error) { box.innerHTML = `<p>${esc(link.error)}</p>`; return; }
+  if (link) { box.innerHTML = ''; onPick(link); return; }
+  const seq = ++searchSeq;
+  box.innerHTML = '<p>Ищу…</p>';
+  try {
+    const res = await searchAddress(q);
+    if (seq !== searchSeq) return;
+    if (!res.length) { box.innerHTML = '<p>Ничего не нашлось. Попробуй написать иначе или вставь ссылку из Google Карт.</p>'; return; }
+    box.innerHTML = res.map((x, i) => `<button type="button" data-r="${i}">${esc(x.full)}</button>`).join('');
+    box.onclick = (e) => { const b = e.target.closest('[data-r]'); if (b) { box.innerHTML = ''; onPick(res[+b.dataset.r]); } };
+  } catch (err) {
+    if (seq === searchSeq) box.innerHTML = '<p>Поиск адреса не сработал. Проверь интернет.</p>';
+  }
+}
+function autocomplete(input, box, onPick) {
+  let t;
+  input.addEventListener('input', () => { clearTimeout(t); t = setTimeout(() => runSearch(input.value, box, onPick), 350); });
+}
+
+// ---------- Toast ----------
+let toastTimer = null;
+function showToast({ title, text = '', tips = [], action = null, ms = 6000 }) {
+  const el = $('toast');
+  clearTimeout(toastTimer);
+  el.innerHTML = `<span class="tt">${esc(title)}</span>
+    <button class="tclose" type="button" aria-label="Закрыть">×</button>
+    ${text ? `<span class="tx">${esc(text)}</span>` : ''}
+    ${tips.length ? `<ul>${tips.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}
+    ${action ? `<button class="tact" type="button">${esc(action.label)}</button>` : ''}`;
+  el.hidden = false;
+  el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';
+  const hide = () => { el.hidden = true; };
+  el.querySelector('.tclose').onclick = hide;
+  if (action) el.querySelector('.tact').onclick = () => { action.run(); hide(); };
+  const arm = () => { toastTimer = setTimeout(hide, ms + tips.length * 1500); };
+  el.onmouseenter = () => clearTimeout(toastTimer);
+  el.onmouseleave = arm;
+  arm();
+}
+const MODE_WORD = { walk: 'пешком', scooter: 'на самокате', bike: 'на велосипеде', car: 'на машине' };
+function whenText(p) {
+  return `${fmtDay(p.date, { weekday: 'long', day: 'numeric', month: 'long' })}, ${p.start}–${p.end}`;
+}
+function planTips(p) {
+  const a = analyze(p);
+  const tips = [];
+  if (a.state === 'outdoor' && RANK[a.level] >= 2) tips.push(`Погода не лучшая: ${reasons(a.issues)}. Совет, когда лучше, смотри в карточке плана`);
+  if (a.trip && a.trip.go.best.min != null) {
+    const best = a.trip.go.best, start = toMin(p.start);
+    if (a.trip.forced) tips.push(`Из-за погоды лучше ехать на машине, выезжай в ${fromMin(Math.max(0, start - best.min))}`);
+    else if (best.mode.id === 'car' && a.trip.d > 8) tips.push(`Выезжай заранее, примерно в ${fromMin(Math.max(0, start - best.min - 15))}: в дороге могут быть пробки`);
+    else tips.push(`Удобнее всего ${MODE_WORD[best.mode.id]}: выйти в ${fromMin(Math.max(0, start - best.min))}`);
+  }
+  if (a.info && a.info.tips) tips.push(...a.info.tips);
+  else if (a.cat && a.cat.id === 'beach') tips.push('Не забудь крем от солнца, воду и полотенце');
+  if (a.state === 'outdoor') a.issues.filter((i) => i.lvl === 'note').forEach((i) => tips.push(i.text));
+  if (a.state === 'home' && a.work) tips.push('Работаешь из дома, дорога не нужна. Хорошего дня!');
+  return tips.slice(0, 3);
+}
+
+// ---------- Edit mode ----------
+let editingId = null;
+let editingDraft = false;
+let draftCat = null;
+function startEdit(id) {
+  const p = plans.find((x) => x.id === id);
+  if (!p) return;
+  editingId = id;
+  selected = p.date;
+  $('plan-title').value = p.title;
+  $('plan-date').value = p.date;
+  $('plan-start').value = p.start;
+  $('plan-end').value = p.end;
+  const w = p.where || { type: 'none' };
+  pickedAddr = null;
+  $('addr-picked').hidden = true;
+  if (w.type === 'home') formWhere = 'home';
+  else if (w.type === 'place' && places.some((x) => x.id === w.id)) formWhere = 'place:' + w.id;
+  else if (w.type === 'addr') {
+    formWhere = 'new';
+    pickedAddr = { short: w.name, full: w.name, lat: w.lat, lon: w.lon };
+    $('addr-q').value = w.name;
+    $('addr-picked').hidden = false;
+    $('addr-picked').textContent = '✓ ' + w.name;
+  } else formWhere = 'none';
+  whereTouched = true;
+  $('form-title').textContent = 'Изменить план';
+  $('form-submit').textContent = 'Сохранить изменения';
+  $('form-cancel').hidden = false;
+  $('add-form').classList.add('editing');
+  $('form-err').hidden = true;
+  render();
+  $('add-form').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
+  $('plan-title').focus({ preventScroll: true });
+  renderFormCheck();
+}
+function resetForm() {
+  editingId = null;
+  editingDraft = false;
+  draftCat = null;
+  $('form-check').hidden = true;
+  $('plan-title').value = '';
+  $('addr-q').value = ''; $('addr-label').value = ''; $('addr-save').checked = false; $('addr-save-row').hidden = true;
+  $('addr-results').innerHTML = '';
+  $('addr-picked').hidden = true; pickedAddr = null;
+  formWhere = null; whereTouched = false;
+  $('form-err').hidden = true;
+  $('form-title').textContent = 'Новый план';
+  $('form-submit').textContent = 'Добавить план';
+  $('form-cancel').hidden = true;
+  $('add-form').classList.remove('editing');
+}
+
+// ---------- Live weather check in the form ----------
+function whereFromForm() {
+  if (formWhere === 'home') return { type: 'home' };
+  if (formWhere && formWhere.startsWith('place:')) return { type: 'place', id: formWhere.slice(6) };
+  if (formWhere === 'new' && pickedAddr) return { type: 'addr', name: pickedAddr.short, lat: pickedAddr.lat, lon: pickedAddr.lon };
+  return { type: 'none' };
+}
+const localLoading = {};
+function ensureLocal(info) {
+  if (!needsLocal(info)) return;
+  const k = locKey(info);
+  if (localWx[k] || localLoading[k]) return;
+  localLoading[k] = fetch(`https://api.open-meteo.com/v1/forecast?latitude=${info.lat}&longitude=${info.lon}&hourly=${HOURLY}&timezone=auto&forecast_days=7`)
+    .then((r) => (r.ok ? r.json() : null))
+    .then((d) => { localWx[k] = { H: d ? parseHourly(d) : null }; renderFormCheck(); })
+    .catch(() => { localWx[k] = { H: null }; });
+}
+function renderFormCheck() {
+  const box = $('form-check');
+  const title = $('plan-title').value.trim();
+  const date = $('plan-date').value, start = $('plan-start').value, end = $('plan-end').value;
+  if (!wx || !title || !date || !start || !end || toMin(end) <= toMin(start)) { box.hidden = true; return; }
+  const editPlan = editingId && plans.find((p) => p.id === editingId);
+  const draft = { id: editingId || '__draft', title, date, start, end, where: whereFromForm(), cat: draftCat || (editPlan && editPlan.cat) || undefined };
+  const info = whereInfo(draft.where, draft.title);
+  ensureLocal(info);
+  const a = analyze(draft);
+  const range = `${start}–${end}`;
+  let cls = 'ok', html = '';
+  if (a.state === 'past') { cls = 'muted'; html = 'Это время уже прошло.'; }
+  else if (a.state === 'far') { cls = 'muted'; html = 'Прогноз на эту дату появится, когда до неё останется меньше недели.'; }
+  else if (a.state === 'home') html = '🏠 Дома, погода не важна.';
+  else if (a.state === 'indoor') html = 'Похоже, это в помещении, погода не помешает.';
+  else if (a.state === 'outdoor') {
+    const where = a.info ? ` (${esc(a.info.name)})` : '';
+    if (RANK[a.level] >= 2) {
+      cls = a.level;
+      html = `<b>Нет, в ${range}${where} ${esc(reasons(a.issues))}.</b> Лучше в это время остаться дома или выбрать занятие в помещении.`;
+      if (a.slot) {
+        const s = a.slot, w = a.H[hourKey(s.date, s.hour)];
+        const sRange = `${pad(s.hour)}:00–${pad(s.hour + s.dur)}:00`;
+        const when = s.same ? `А вот ${sRange}` : `А вот ${fmtDay(s.date)}, ${sRange},`;
+        html += `<span class="fc-alt">${when} подходит: ${wmo(w.code).label.toLowerCase()}, ${Math.round(w.temp)}°, дождь ${w.pop}%, ветер ${Math.round(w.wind)} км/ч.
+          <button class="btn-ghost" type="button" data-fc-date="${s.date}" data-fc-hour="${s.hour}" data-fc-dur="${s.dur}">Поставить на ${s.same ? sRange : fmtDay(s.date) + ', ' + sRange}</button></span>`;
+      }
+    } else {
+      const w = a.H[hourKey(date, Math.floor(toMin(start) / 60))];
+      html = `<b>Да, в ${range}${where} погода подходит.</b>` + (w ? ` ${wmo(w.code).label}, ${Math.round(w.temp)}°, дождь ${w.pop}%, ветер ${Math.round(w.wind)} км/ч.` : '');
+      const note = a.issues.find((i) => i.lvl === 'note');
+      if (note) html += ` ${esc(note.text)}.`;
+    }
+  }
+  if (a.trip && a.trip.go.best.min != null && a.state !== 'past' && a.state !== 'far') {
+    const b = a.trip.go.best;
+    const backCar = a.trip.back && a.trip.back.forcedByWeather;
+    html += `<span class="fc-alt">Дорога туда${a.trip.fromCenter ? ' от центра города' : ''}: ${a.trip.go.forcedByWeather ? 'из-за погоды лучше на машине' : 'удобнее всего ' + MODE_WORD[b.mode.id]}, около ${b.min} мин.${backCar ? ' Обратно из-за погоды лучше на машине или такси.' : ''}</span>`;
+  } else if (a.state === 'trip') {
+    html = 'Дорога: ' + (a.trip.forced ? 'из-за погоды лучше на машине.' : 'погода не помешает.');
+  }
+  box.className = `form-check ${cls}`;
+  box.innerHTML = html;
+  box.hidden = !html;
+}
+function startDraftFromIdea(s) {
+  resetForm();
+  $('plan-title').value = s.idea.title;
+  $('plan-date').value = s.date;
+  $('plan-start').value = `${pad(s.hour)}:00`;
+  $('plan-end').value = `${pad(Math.min(s.hour + s.dur, 23))}:00`;
+  formWhere = 'none';
+  whereTouched = true;
+  editingDraft = true;
+  draftCat = s.idea.cat || null;
+  $('form-title').textContent = 'Новый план из идеи';
+  $('form-cancel').hidden = false;
+  $('add-form').classList.add('editing');
+  selected = s.date;
+  render();
+  renderFormCheck();
+  $('add-form').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
+  $('plan-start').focus({ preventScroll: true });
+}
+
+// ---------- Main ----------
+function render() {
+  $('place-label').textContent = `${city.name}${city.country ? ', ' + city.country : ''}`;
+  if (!editingId && !editingDraft && document.activeElement !== $('plan-date')) $('plan-date').value = selected;
+  renderWeek();
+  renderIdeas();
+  renderDay();
+  renderHours();
+  renderPlaces();
+  renderWhere();
+}
+
+async function start() {
+  $('status').hidden = false;
+  $('status').className = 'status';
+  $('status').textContent = 'Загружаю прогноз…';
+  if (places === null) seedPlaces();
+  try {
+    await loadWeather();
+    $('status').hidden = true;
+    if (plans === null) seedPlans();
+    if (!selected || !wx.days.some((d) => d.date === selected)) {
+      const withPlans = wx.days.find((d) => d.date >= nowDate && plans.some((p) => p.date === d.date));
+      selected = plans.some((p) => p.date === nowDate) || !withPlans ? nowDate : withPlans.date;
+    }
+  } catch (e) {
+    wx = null;
+    $('status').className = 'status error';
+    $('status').textContent = 'Не получилось загрузить прогноз. Проверь интернет и обнови страницу.';
+    if (plans === null) plans = [];
+    if (!selected) { const t = new Date(); selected = `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`; }
+  }
+  render();
+  loadLocalForecasts();
+}
+
+try { if (localStorage.getItem('sky.ideasOpen') === '1') $('ideas-wrap').open = true; } catch (e) {}
+$('ideas-wrap').addEventListener('toggle', () => { try { localStorage.setItem('sky.ideasOpen', $('ideas-wrap').open ? '1' : '0'); } catch (e) {} });
+$('lg-rain').innerHTML = ICON.rain + ' дождь';
+$('lg-wind').innerHTML = ICON.wind + ' ветер, км/ч';
+$('lg-temp').innerHTML = ICON.temp + ' температура';
+
+$('week').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-date]');
+  if (!b) return;
+  selected = b.dataset.date;
+  render();
+});
+
+$('ideas').addEventListener('click', (e) => {
+  const ed = e.target.closest('[data-idea-edit]');
+  if (ed) { startDraftFromIdea(currentIdeas[+ed.dataset.ideaEdit]); return; }
+  const b = e.target.closest('[data-idea]');
+  if (!b) return;
+  const s = currentIdeas[+b.dataset.idea];
+  const plan = { id: uid(), date: s.date, start: `${pad(s.hour)}:00`, end: `${pad(Math.min(s.hour + s.dur, 23))}:00`, title: s.idea.title, where: { type: 'none' }, ...(s.idea.cat ? { cat: s.idea.cat } : {}) };
+  plans.push(plan);
+  save(LS_PLANS, plans);
+  selected = s.date;
+  render();
+  showToast({ title: '✓ План создан', text: `«${plan.title}», ${whenText(plan)}`, tips: planTips(plan) });
+  loadLocalForecasts();
+});
+
+$('plans').addEventListener('click', (e) => {
+  if (e.target.closest('[data-clear-examples]')) {
+    plans = plans.filter((p) => !p.example);
+    places = places.filter((p) => !p.example || p.id === 'home');
+    const home = places.find((p) => p.id === 'home');
+    if (home && home.example) Object.assign(home, { addr: null, lat: null, lon: null, example: false });
+    save(LS_PLANS, plans);
+    save(LS_PLACES, places);
+    render();
+    showToast({ title: 'Примеры убраны', text: 'Теперь в календаре только твои планы. Не забудь указать адрес дома в «Моих местах».' });
+    return;
+  }
+  const ed = e.target.closest('[data-edit]');
+  if (ed) { startEdit(ed.dataset.edit); return; }
+  const del = e.target.closest('[data-del]');
+  if (del) {
+    const removed = plans.find((p) => p.id === del.dataset.del);
+    plans = plans.filter((p) => p.id !== del.dataset.del);
+    save(LS_PLANS, plans);
+    if (editingId === removed.id) resetForm();
+    render();
+    showToast({
+      title: 'План удалён', text: `«${removed.title}», ${whenText(removed)}`,
+      action: { label: 'Вернуть', run: () => { plans.push(removed); save(LS_PLANS, plans); selected = removed.date; render(); } },
+    });
+    return;
+  }
+  const mv = e.target.closest('[data-move]');
+  if (mv) {
+    const p = plans.find((x) => x.id === mv.dataset.move);
+    const len = Math.max(30, toMin(p.end) - toMin(p.start));
+    const s = +mv.dataset.hour * 60;
+    p.date = mv.dataset.date;
+    p.start = fromMin(s);
+    p.end = fromMin(Math.min(s + len, 23 * 60 + 59));
+    save(LS_PLANS, plans);
+    selected = p.date;
+    render();
+    loadLocalForecasts();
+    showToast({ title: 'План перенесён', text: `«${p.title}» теперь ${whenText(p)}`, tips: planTips(p) });
+  }
+});
+
+$('plan-title').addEventListener('input', () => { renderWhere(); renderFormCheck(); });
+['plan-date', 'plan-start', 'plan-end'].forEach((id) => { $(id).addEventListener('input', renderFormCheck); $(id).addEventListener('change', renderFormCheck); });
+$('form-check').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-fc-hour]');
+  if (!b) return;
+  const h = +b.dataset.fcHour, dur = +b.dataset.fcDur;
+  $('plan-date').value = b.dataset.fcDate;
+  $('plan-start').value = `${pad(h)}:00`;
+  $('plan-end').value = `${pad(Math.min(h + dur, 23))}:00`;
+  renderFormCheck();
+});
+$('plan-start').addEventListener('change', () => {
+  const s = toMin($('plan-start').value);
+  if (toMin($('plan-end').value) <= s) $('plan-end').value = fromMin(Math.min(s + 60, 23 * 60 + 59));
+});
+$('where-chips').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-where]');
+  if (!b) return;
+  formWhere = b.dataset.where;
+  whereTouched = true;
+  $('form-err').hidden = true;
+  renderWhere();
+  renderFormCheck();
+  if (formWhere === 'new') $('addr-q').focus();
+});
+function onAddrPick(r) {
+  pickedAddr = r;
+  $('addr-picked').hidden = false;
+  $('addr-picked').textContent = '✓ ' + r.short;
+  $('addr-q').value = r.short;
+  renderFormCheck();
+}
+$('addr-find').addEventListener('click', () => runSearch($('addr-q').value, $('addr-results'), onAddrPick));
+autocomplete($('addr-q'), $('addr-results'), onAddrPick);
+$('addr-q').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); $('addr-find').click(); } });
+$('addr-save').addEventListener('change', () => { $('addr-save-row').hidden = !$('addr-save').checked; });
+$('addr-icons').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-icon]');
+  if (!b) return;
+  addrIcon = b.dataset.icon;
+  renderIconChoices($('addr-icons'), addrIcon);
+});
+
+$('add-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const err = (msg) => { $('form-err').textContent = msg; $('form-err').hidden = false; };
+  const title = $('plan-title').value.trim();
+  if (!title) return err('Напиши, что планируешь.');
+  if (!$('plan-date').value) return err('Выбери день.');
+  if (toMin($('plan-end').value) <= toMin($('plan-start').value)) return err('Время «до» должно быть позже времени «с».');
+  if (!formWhere) return err('Ответь, где будешь: дома или в другом месте.');
+  let where;
+  if (formWhere === 'home') where = { type: 'home' };
+  else if (formWhere === 'none') where = { type: 'none' };
+  else if (formWhere.startsWith('place:')) where = { type: 'place', id: formWhere.slice(6) };
+  else {
+    if (!pickedAddr) return err('Найди адрес и выбери его из списка.');
+    if ($('addr-save').checked) {
+      const id = uid();
+      places.push({ id, icon: addrIcon, name: $('addr-label').value.trim() || pickedAddr.short.split(',')[0], addr: pickedAddr.short, lat: pickedAddr.lat, lon: pickedAddr.lon });
+      save(LS_PLACES, places);
+      where = { type: 'place', id };
+    } else {
+      where = { type: 'addr', name: pickedAddr.short, lat: pickedAddr.lat, lon: pickedAddr.lon };
+    }
+  }
+  const fields = { date: $('plan-date').value, start: $('plan-start').value, end: $('plan-end').value, title, where };
+  let plan, wasEdit = false;
+  if (editingId && (plan = plans.find((p) => p.id === editingId))) {
+    Object.assign(plan, fields);
+    delete plan.example;
+    wasEdit = true;
+  } else {
+    plan = { id: uid(), ...fields, ...(draftCat ? { cat: draftCat } : {}) };
+    plans.push(plan);
+  }
+  save(LS_PLANS, plans);
+  selected = plan.date;
+  resetForm();
+  render();
+  showToast({ title: wasEdit ? '✓ План обновлён' : '✓ План создан', text: `«${plan.title}», ${whenText(plan)}`, tips: planTips(plan) });
+  loadLocalForecasts();
+});
+$('form-cancel').addEventListener('click', () => { resetForm(); render(); });
+
+// ---------- Saved places ----------
+let placeMode = 'new';
+let pfIcon = '🏢';
+function openPlaceForm(mode) {
+  placeMode = mode;
+  $('place-form').hidden = false;
+  $('place-add-open').hidden = true;
+  $('place-meta').hidden = mode === 'home';
+  $('place-form-title').textContent = mode === 'home' ? 'Адрес дома' : 'Новое место';
+  $('pf-results').innerHTML = '';
+  renderIconChoices($('pf-icons'), pfIcon);
+  (mode === 'home' ? $('pf-q') : $('pf-name')).focus();
+}
+function closePlaceForm() {
+  $('place-form').hidden = true;
+  $('place-add-open').hidden = false;
+  $('pf-name').value = ''; $('pf-q').value = ''; $('pf-results').innerHTML = '';
+}
+$('place-add-open').addEventListener('click', () => openPlaceForm('new'));
+$('pf-cancel').addEventListener('click', closePlaceForm);
+$('pf-icons').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-icon]');
+  if (!b) return;
+  pfIcon = b.dataset.icon;
+  renderIconChoices($('pf-icons'), pfIcon);
+});
+$('place-form').addEventListener('submit', (e) => { e.preventDefault(); $('pf-find').click(); });
+function onPlacePick(r) {
+  if (placeMode === 'home') {
+    const home = places.find((p) => p.id === 'home');
+    Object.assign(home, { addr: r.short, lat: r.lat, lon: r.lon, example: false });
+  } else {
+    places.push({ id: uid(), icon: pfIcon, name: $('pf-name').value.trim() || r.short.split(',')[0], addr: r.short, lat: r.lat, lon: r.lon });
+  }
+  save(LS_PLACES, places);
+  closePlaceForm();
+  render();
+  loadLocalForecasts();
+}
+$('pf-find').addEventListener('click', () => runSearch($('pf-q').value, $('pf-results'), onPlacePick));
+autocomplete($('pf-q'), $('pf-results'), onPlacePick);
+$('places').addEventListener('click', (e) => {
+  if (e.target.closest('[data-home-edit]')) { openPlaceForm('home'); return; }
+  const d = e.target.closest('[data-place-del]');
+  if (d) {
+    places = places.filter((p) => p.id !== d.dataset.placeDel);
+    save(LS_PLACES, places);
+    render();
+  }
+});
+
+// ---------- City ----------
+$('place-btn').addEventListener('click', () => {
+  const s = $('settings');
+  s.hidden = !s.hidden;
+  $('place-btn').setAttribute('aria-expanded', String(!s.hidden));
+  if (!s.hidden) $('city').focus();
+});
+// Regions people call by name but geocoders only know as towns.
+const CITY_ALIASES = [
+  { re: /^(каппадок|cappadoc|kapadok)/i, name: 'Каппадокия', label: 'Каппадокия (Гёреме, Невшехир), Турция', country: 'Турция', lat: 38.6431, lon: 34.8289 },
+];
+async function searchCity(q) {
+  const res = CITY_ALIASES.filter((a) => a.re.test(q)).map((a) => ({ ...a }));
+  const [om, ph] = await Promise.allSettled([
+    fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=5&language=ru&format=json`).then((r) => r.json()),
+    fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=5&osm_tag=place`).then((r) => r.json()),
+  ]);
+  if (om.status === 'rejected' && ph.status === 'rejected' && !res.length) throw new Error('search failed');
+  if (om.status === 'fulfilled' && om.value.results) {
+    om.value.results.forEach((c) => res.push({ name: c.name, label: [c.name, c.admin1, c.country].filter(Boolean).join(', '), country: c.country || '', lat: c.latitude, lon: c.longitude }));
+  }
+  if (ph.status === 'fulfilled' && ph.value.features) {
+    ph.value.features.forEach((f) => {
+      const p = f.properties;
+      if (!p.name) return;
+      res.push({ name: p.name, label: [p.name, p.state, p.country].filter(Boolean).join(', '), country: p.country || '', lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0] });
+    });
+  }
+  const seen = new Set();
+  return res.filter((r) => {
+    const k = `${r.lat.toFixed(1)},${r.lon.toFixed(1)}`;
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  }).slice(0, 7);
+}
+function changeCity(c) {
+  city = { name: c.name, country: c.country || '', lat: c.lat, lon: c.lon };
+  save(LS_CITY, city);
+  // The demo plans and places were made for Fethiye; the person's own data stays.
+  const hadExamples = plans && plans.some((p) => p.example);
+  if (plans) plans = plans.filter((p) => !p.example);
+  places = places.filter((p) => !p.example || p.id === 'home');
+  const home = places.find((p) => p.id === 'home');
+  if (home && home.example) Object.assign(home, { addr: null, lat: null, lon: null, example: false });
+  save(LS_PLANS, plans);
+  save(LS_PLACES, places);
+  selected = null;
+  $('settings').hidden = true;
+  $('place-btn').setAttribute('aria-expanded', 'false');
+  $('city-results').innerHTML = '';
+  $('city').value = '';
+  start().then(() => {
+    const region = regionFor(city);
+    showToast({
+      title: `✓ Город: ${city.name}`,
+      text: region ? `Погода и идеи теперь для региона «${region.name}».` : 'Погода и идеи теперь для этого города.',
+      tips: hadExamples ? ['Примеры планов для Фетхие убраны, твои собственные планы остались'] : [],
+    });
+  });
+}
+$('city-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const q = $('city').value.trim();
+  const box = $('city-results');
+  if (!q) return;
+  box.innerHTML = '<p>Ищу…</p>';
+  try {
+    const res = await searchCity(q);
+    if (!res.length) { box.innerHTML = '<p>Такое место не нашлось. Попробуй написать иначе, например по-английски.</p>'; return; }
+    box.innerHTML = res.map((c, i) => `<button type="button" data-i="${i}">${esc(c.label)}</button>`).join('');
+    box.onclick = (ev) => {
+      const b = ev.target.closest('[data-i]');
+      if (b) changeCity(res[+b.dataset.i]);
+    };
+  } catch (err) {
+    box.innerHTML = '<p>Поиск не сработал. Проверь интернет.</p>';
+  }
+});
+
+renderIconChoices($('addr-icons'), addrIcon);
+start();
+</script>
+</body>
+</html>
