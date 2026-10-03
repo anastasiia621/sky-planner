@@ -1,0 +1,8 @@
+{
+  "name": "sky-planner",
+  "private": true,
+  "description": "Sky Planner site (site/) and Telegram bot (netlify/functions/)",
+  "dependencies": {
+    "@netlify/blobs": "^11.1.3"
+  }
+}

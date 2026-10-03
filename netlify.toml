@@ -1,3 +1,7 @@
 # Netlify publishes the site/ folder as is: no build step.
 [build]
   publish = "site"
+
+# Telegram bot: serverless functions (webhook, 8:00 morning message). Code shared between them is in netlify/lib.
+[functions]
+  directory = "netlify/functions"
