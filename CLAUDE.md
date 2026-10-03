@@ -22,6 +22,11 @@ Weather-aware planner: checks plans against the forecast, suggests better times,
 - Known places with coordinates and tips: `KNOWN_SPOTS`. Idea sets per region: `REGIONS` / `IDEAS_*` (activities, `kind: 'food'`, `kind: 'trip'`). Photos: Wikipedia page summaries (`wiki` field, 500px thumbnails).
 - Destination far from the chosen city → separate forecast (`localWx`, `needsLocal`). Routes start from home if within 60 km, else from the city centre.
 
-## Next: Telegram bot (v1)
+## Telegram bot @weathergout_bot (v1)
 
-Planned in this repo as Netlify Functions: webhook for commands (`/start` asks the city, `/today`, `/ideas`, `/city`), a scheduled function for an 8:00 morning message (forecast, warnings, idea of the day), Netlify Blobs for subscribers (chat id + city). Token in the Netlify env var `TELEGRAM_BOT_TOKEN`. The bot cannot see the site's plans (they are in `localStorage`); shared plans and reminders are v2.
+- `netlify/functions/telegram.mjs` — webhook at `/api/telegram` (commands /start, /today, /ideas, /city, /stop, /help; city choice via inline buttons). Checks Telegram's secret header (derived from the token).
+- `netlify/functions/morning.mjs` — runs hourly, sends forecast + warnings + idea of the day to subscribers whose local time is 8:00.
+- `netlify/functions/telegram-setup.mjs` — open `/api/telegram-setup` once after deploy to register the webhook and the command menu.
+- `netlify/lib/bot.mjs` (weather, texts, Telegram API, Netlify Blobs store `subscribers`), `netlify/lib/ideas.mjs` (copy of the site's ideas: update both).
+- Token: Netlify env var `TELEGRAM_BOT_TOKEN`. The bot cannot see the site's plans (they are in `localStorage`); shared plans and reminders are v2.
+- `python3` is also blocked by the Xcode license: use node for scripts.

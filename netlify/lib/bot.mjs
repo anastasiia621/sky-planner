@@ -170,7 +170,7 @@ export function forecastText(city, w, { morning = false } = {}) {
 }
 
 export function ideasText(city, w) {
-  const ideas = ideasFor(city, w).slice(0, 5);
+  const ideas = ideasFor(city, w).slice(0, 5).sort((a, b) => a.hour - b.hour);
   if (!ideas.length) return `На сегодня в ${esc(city.name)} подходящих идей уже нет. Загляни завтра утром или открой <a href="${SITE}">планировщик</a>: там идеи на 7 дней.`;
   return [`💡 <b>Идеи на сегодня</b>, ${esc(city.name)}`, '', ideas.map(ideaLine).join('\n\n'), '', `Больше идей на неделю: <a href="${SITE}">планировщик</a>`].join('\n');
 }
